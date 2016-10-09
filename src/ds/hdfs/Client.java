@@ -10,8 +10,6 @@ import java.rmi.RemoteException;
 import java.util.*;
 import java.io.*;
 
-
-
 public class Client{
     public static void main(String[] args) throws RemoteException, UnknownHostException{
         // To read config file and Connect to NameNode
