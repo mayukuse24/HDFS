@@ -1,6 +1,5 @@
 package ds.hdfs;
 import java.net.UnknownHostException;
-//import java.rmi.RemoteException;
 import java.rmi.*;
 import java.rmi.registry.LocateRegistry;
 import java.rmi.registry.Registry;
@@ -33,13 +32,24 @@ public class Client{
             else if(Split_Commands[0].equals("put"))
             {
                 //Put file into HDFS
+                try{
+                    System.out.println("Put" + Split_Commands[1]);
+                }catch(ArrayIndexOutOfBoundsException e){
+                    System.out.println("Please type 'help' for instructions");
+                }
             }
             else if(Split_Commands[0].equals("get"))
             {
                 //Get file from HDFS
+                try{
+                System.out.println("Get" + Split_Commands[1]);
+                }catch(ArrayIndexOutOfBoundsException e){
+                    System.out.println("Please type 'help' for instructions");
+                }
             }
             else if(Split_Commands[0].equals("list"))
             {
+                System.out.println("List request");
                 //Get list of files in HDFS
             }
             else
