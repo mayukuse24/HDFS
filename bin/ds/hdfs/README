@@ -1,0 +1,8 @@
+docker images
+docker run --name vindock -e http_proxy -e https_proxy --net=host --rm -ti ds/arch:latest /bin/bash 
+docker exec -i -t vindock /bin/bash
+docker commit vindock ds/arch
+docker ps
+docker ps -a
+docker cp Ricard-Agrawala\ Assignment-2 vindock:/home
+docker inspect -f '{{.Name}} - {{.NetworkSettings.IPAddress }}' $(docker ps -aq)
