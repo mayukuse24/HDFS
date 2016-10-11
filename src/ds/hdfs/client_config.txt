@@ -1,0 +1,2 @@
+//The Client Program only takes the last line of this config file
+Server;10.2.40.247;2005
