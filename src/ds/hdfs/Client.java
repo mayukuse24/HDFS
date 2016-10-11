@@ -206,8 +206,18 @@ public class Client
             //Get the DNstub
             this.DNStub = GetDNStub("Server", SendToIP, ToPort);
 
+            //Remove the first DN from the DataNodeLocation list
+            int No_DNLocations = newBlock.getLocationsCount();
+            BlockLocations.Builder SendBlock = BlockLocations.newBuilder();
+            SendBlock.setBlockNumber(BlockNumber);
+            for(int a=1; a<No_DNLocations; a++)
+            {
+                SendBlock.addLocations(DNLocations.get(a));
+            }
+
             WriteBlockRequest.Builder BlockWrite = WriteBlockRequest.newBuilder();
-            BlockWrite.setBlockInfo(newBlock); //Same as the one we got from the NN
+            //Removed the one to which it is being sent
+            BlockWrite.setBlockInfo(SendBlock); //Not Same as the one we got from the NN 
             //Set the ByteString
             if(i == NumSplits) //Use LeftBuffer
             {
