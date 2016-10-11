@@ -47,6 +47,7 @@ public class Client
                 INameNode stub = (INameNode) registry.lookup(Name);
                 return stub;
             }catch(Exception e){
+                continue;
             }
         }
     }
