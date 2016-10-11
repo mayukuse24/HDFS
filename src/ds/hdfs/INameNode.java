@@ -1,4 +1,4 @@
-package INameNode;
+package ds.hdfs;
 import java.rmi.Remote;
 import java.rmi.RemoteException;
 
