@@ -377,7 +377,29 @@ public class Client
             System.out.println("IOError while writing to the file");
             return;
         }
-        System.out.println("File Retrieve Successful");
+        //System.out.println("File Retrieve Successful");
+        
+        //Close File and get Status
+        CloseFileRequest.Builder CloseFile = CloseFileRequest.newBuilder();
+        CloseFile.setHandle(FileHandle);
+        byte[] FinResp;
+        try{
+            FinResp = this.NNStub.closeFile(CloseFile.build().toByteArray());
+        }catch(Exception e){
+            System.out.println("Unable to call CloseFile from Get");
+            return; 
+        }
+        CloseFileResponse Resp;
+        try{
+            Resp = CloseFileResponse.parseFrom(FinResp);
+        }catch(Exception e){
+            System.out.println("Unable to get proto from CloseFileResponse Get");
+            return;
+        }
+        if(Resp.getStatus() < 0)
+            System.out.println("We have a bad CloseFileResponse Status = " + Resp.getStatus());
+        else
+            System.out.println("File Retrieve Successful");
     }
 
     public void List() // Done
