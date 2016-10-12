@@ -6,6 +6,14 @@ import java.rmi.RemoteException;
 import java.rmi.server.UnicastRemoteObject;
 import java.rmi.*;
 import java.util.*;
+import java.util.concurrent.Callable;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
+import java.util.concurrent.Future;
+
+import com.google.protobuf.ByteString;
+import com.google.protobuf.InvalidProtocolBufferException;
+
 import java.io.*;
 import ds.hdfs.hdfsformat.*;
 import ds.hdfs.IDataNode.*;
@@ -113,12 +121,85 @@ public class DataNode implements IDataNode
 
     }
 
+    
     public byte[] readBlock(byte[] Inp)
     {
+    	ReadBlockResponse.Builder response = ReadBlockResponse.newBuilder();
+    	try
+    	{
+    		ReadBlockRequest deserObj = ReadBlockRequest.parseFrom(Inp);
+    		int chunkno = deserObj.getBlockNumber();
+    		String fname = Integer.toString(chunkno) + ".chunk";
+    		
+			FileInputStream fis = new FileInputStream(fname);
+			BufferedReader br = new BufferedReader(new InputStreamReader(fis));
+			String line = null;
+			while ((line = br.readLine()) != null) 
+			{
+				System.out.println(line);
+				response.addData(ByteString.copyFrom(line.getBytes()));
+			}
+			br.close();
+    	}
+    	catch(Exception e)
+    	{
+    		System.out.println("Error at readBlock " + e.toString());
+    		e.printStackTrace();
+    		response.setStatus(-1);
+    	}
+    	
+    	return response.build().toByteArray();
     }
 
     public byte[] writeBlock(byte[] Inp)
     {
+    	WriteBlockResponse.Builder response = WriteBlockResponse.newBuilder();
+    	try
+    	{
+    		WriteBlockRequest deserObj = WriteBlockRequest.parseFrom(Inp);
+    		
+    		Future<Integer> future = null;
+
+    		if(deserObj.getBlockInfo().getLocationsCount() != 0) //Threading if another replication required
+    		{
+    			RunnableDemo nextcall = new RunnableDemo("Thread-1",deserObj);
+    	        final ExecutorService service = Executors.newFixedThreadPool(2);
+    			future = service.submit(nextcall);    			
+    		}
+    		
+    		int chunkno = deserObj.getBlockInfo().getBlockNumber();
+    		System.out.println(chunkno);
+    		
+    		String fname = Integer.toString(chunkno) + ".chunk";
+    		
+    		File ftest = new File(fname);
+			ftest.createNewFile(); //creates a new file only if one doesnt exist
+			
+			byte[] File;
+    		BufferedWriter out = new BufferedWriter(new FileWriter(fname, false));
+    		for(int i=0; i<deserObj.getDataCount();i++)
+    		{
+    			File = new byte[deserObj.getData(i).size()];
+    			deserObj.getData(i).copyTo(File,0);
+      			out.write(new String(File));
+    		}
+			out.close();
+			
+			int isSuccess = 1;
+			if(future != null)
+			{
+				isSuccess = future.get(); //wait here for thread to complete	
+			}
+			response.setStatus(isSuccess);
+    	}
+    	catch(Exception e)
+    	{
+    		System.out.println("Error at writeBlock " + e.toString());
+    		e.printStackTrace();
+    		response.setStatus(-1);
+    	}
+    	
+    	return response.build().toByteArray();
     }
 
     public void BlockReport()
@@ -157,23 +238,94 @@ public class DataNode implements IDataNode
         }
     }
 
-    public static void main(String args[])
+    public static void main(String args[]) throws InvalidProtocolBufferException 
     {
         //Define a Datanode Me
         DataNode Me = new DataNode();        
         
+        /*
+        ReadBlockRequest request = ReadBlockRequest.newBuilder().setBlockNumber(1003).build();
+        ReadBlockResponse response = ReadBlockResponse.parseFrom(Me.readBlock(request.toByteArray()));
+        System.out.println(response.toString());
+        
+        WriteBlockRequest request11 = WriteBlockRequest.newBuilder().setBlockInfo(BlockLocations.newBuilder()
+        		.setBlockNumber(1004).build()).addData(ByteString.copyFrom("line 1\n".getBytes())).build();
+        WriteBlockResponse response11 = WriteBlockResponse.parseFrom(Me.writeBlock(request11.toByteArray()));
+        System.out.println(response11.toString());
+        */
+        
         //Bind The DataNode Self
         String Config = Me.FileTail("dn_config.txt");
         String[] Split_Config = Config.split(";");
-        Me.BindServer(Split_Config[0], Split_Config[1], Integer.parseInt(Split_Config[2]));
+        //Me.BindServer(Split_Config[0], Split_Config[1], Integer.parseInt(Split_Config[2]));
         Me.MyIP = Split_Config[1];
         Me.MyPort = Integer.parseInt(Split_Config[2]);        
 
+        /*
+        WriteBlockRequest request12 = WriteBlockRequest.newBuilder().setBlockInfo(BlockLocations.newBuilder()
+        		.setBlockNumber(1005)
+        		.addLocations(DataNodeLocation.newBuilder().setIp(Me.MyIP).setPort(Me.MyPort).build())
+        		.addLocations(DataNodeLocation.newBuilder().setIp("4.5.6.7").setPort(Me.MyPort).build()).build())
+        		.addData(ByteString.copyFrom("line 1\n".getBytes())).build();
+                
+        WriteBlockResponse response12 = WriteBlockResponse.parseFrom(Me.writeBlock(request12.toByteArray()));
+        System.out.println(response12.toString());
+        */
+        
         //Get The NameNode
         String NNConfig = Me.FileTail("nn_details.txt");
         String[] NNSplit_Config = NNConfig.split(";");
         Me.NNStub = Me.GetNNStub(NNSplit_Config[0], NNSplit_Config[1], Integer.parseInt(NNSplit_Config[2]));
-
         
     }
+}
+
+class RunnableDemo implements Callable<Integer>
+{
+	private Thread t;
+	private String threadName;
+	WriteBlockRequest passobj;
+	
+	RunnableDemo(String name,WriteBlockRequest req) 
+	{
+		threadName = name;
+		passobj = req;
+		System.out.println("Creating " +  threadName );
+	}		
+	   		
+	public Integer call() 
+	{
+		try 
+		{
+			System.out.println("Running " +  threadName );
+			System.out.println(passobj.toString());
+			DataNodeLocation targetdn = passobj.getBlockInfo().getLocations(0);
+			
+			//remove a location from the locations list
+			BlockLocations temp = passobj.getBlockInfo().toBuilder().removeLocations(0).build();
+			passobj = passobj.toBuilder().clearBlockInfo().build();
+			passobj = passobj.toBuilder().setBlockInfo(temp).build();
+			
+			System.out.println(targetdn.toString());
+			System.out.println(passobj.toString());
+			
+			//TODO: call writeblock rpc of targetdn and send deserObj
+			Registry registry = LocateRegistry.getRegistry(targetdn.getIp(),targetdn.getPort());
+			IDataNode stub = (IDataNode)registry.lookup("Server");
+			WriteBlockResponse response = WriteBlockResponse.parseFrom(stub.writeBlock(passobj.toByteArray()));
+			
+			System.out.println("Thread " +  threadName + " exiting.");
+			if(response.getStatus() < 0)
+				return -1;
+			else
+				return 1;
+		}
+		catch (Exception e) 
+		{
+			System.out.println("Thread " +  threadName + " interrupted.");
+			e.printStackTrace();
+			
+			return -1;
+		}	
+	}
 }

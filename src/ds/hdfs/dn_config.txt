@@ -1,2 +1,0 @@
-//this is the DataNode Config File
-Server;10.1.39.133;2001
