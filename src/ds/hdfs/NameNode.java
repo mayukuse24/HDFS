@@ -62,10 +62,14 @@ public class NameNode implements INameNode{
 	{
 		String filename;
 		int filehandle;
-		public FileInfo(String name, int handle)
+		boolean writemode;
+		ArrayList<Integer> Chunks;
+		public FileInfo(String name, int handle, boolean option)
 		{
 			filename = name;
 			filehandle = handle;
+			writemode = option;
+			Chunks = new ArrayList<Integer>();
 		}
 	}
 	/* Method to open a file given file name with read-write flag*/
@@ -105,12 +109,13 @@ public class NameNode implements INameNode{
 				random++;
 			}
 			int filehandle = random; //assign a random unique number	
-			filelist.add(new FileInfo(filename,filehandle));
 					
 			response.setHandle(filehandle);
 			
 			if(toRead) //read request
 			{
+				filelist.add(new FileInfo(filename,filehandle,false));
+				
 				File ftest = new File(fchunk_file);
 				ftest.createNewFile(); //creates a new file only if one doesnt exist
 				
@@ -139,7 +144,9 @@ public class NameNode implements INameNode{
 			}
 			else //write request
 			{
-				//TODO : open filechunkslist.txt and write in filename only
+				filelist.add(new FileInfo(filename,filehandle,true));
+				
+				//Open filechunkslist.txt and write in filename only
 				BufferedWriter out = new BufferedWriter(new FileWriter(fchunk_file, true));
 				out.append(filename+"\n");
 				out.close();
@@ -161,8 +168,74 @@ public class NameNode implements INameNode{
 		{
 			CloseFileRequest deserObj = CloseFileRequest.parseFrom(inp);
 			int filehandle = deserObj.getHandle();
-			filelist.remove(filehandle);
-			//TODO : Remove Handle from list. Perform any other close functions necessary
+			for(int i=0;i<filelist.size();i++)
+			{
+				if(filehandle == filelist.get(i).filehandle)
+				{
+					//If write mode then append line to filetochunklist.txt
+					if(filelist.get(i).writemode)
+					{
+						String fname = filelist.get(i).filename;
+						
+						File ftest = new File(fchunk_file);
+						ftest.createNewFile(); //creates a new file only if one doesnt exist
+					
+						BufferedWriter bw = new BufferedWriter(new FileWriter(fchunk_file, true));
+						ArrayList<Integer> tempfiletochunklist = filelist.get(i).Chunks;
+						String lastline = fname + ":"+ tempfiletochunklist.get(0);
+						for(int k=1;k<tempfiletochunklist.size();k++)
+						{
+							lastline += ","+tempfiletochunklist.get(k);
+						}
+						bw.append(lastline + "\n");
+						bw.close();
+						
+						/*
+						File ftest = new File(fchunk_file);
+						ftest.createNewFile(); //creates a new file only if one doesnt exist
+						File ftest2 = new File("tmp.txt");
+						ftest2.createNewFile(); 
+						
+						FileOutputStream fos = new FileOutputStream("tmp.txt");
+						FileInputStream fis = new FileInputStream(fchunk_file);
+					
+						BufferedReader br = new BufferedReader(new InputStreamReader(fis));
+						BufferedWriter bw = new BufferedWriter(new OutputStreamWriter(fos));
+					 
+						//line format : filename:chunk1,chunk2,chunk3
+						String lastline = null;
+						String line = null;
+						while ((line = br.readLine()) != null) 
+						{
+							line = line.replace("\n", "").replace("\r", "");
+							String[] fname_chunks = line.split(",");
+							if(fname.equals(fname_chunks[0]))
+							{
+								lastline = fname;
+								for(int j=1;j<fname_chunks.length;j++)
+								{
+									lastline += "," + fname_chunks[j];
+								}
+								response.setStatus(1);
+							}
+							else
+							{
+								bw.write(line + "\n");
+							}
+						}
+						bw.write(lastline+"," + Integer.toString(random)+"\n"); //inserted new chunk number
+						br.close();
+						bw.close();
+						fos.close();
+						fis.close();
+						ftest2.renameTo(ftest);
+						*/
+					}
+					//Remove handle from temporary filelist
+					filelist.remove(i);
+					break;
+				}
+			}
 			response.setStatus(1);
 		}
 		catch(Exception e)
@@ -218,15 +291,17 @@ public class NameNode implements INameNode{
 		{
 			AssignBlockRequest deserObj = AssignBlockRequest.parseFrom(inp);
 			String fname = new String();
+			int fileindex = -1;
 			for(int i=0;i<filelist.size();i++)
 			{
 				if(deserObj.getHandle() == filelist.get(i).filehandle)
 				{
+					fileindex = i;
 					fname = filelist.get(i).filename;
 				}
 			}
 			
-			if(fname == null) //TODO : handle filehandle that doesnt exist in NN
+			if(fname == null) //handle filehandle that doesnt exist in NN
 			{
 				response.setStatus(-2); //file not present error
 				return response.build().toByteArray();
@@ -240,6 +315,9 @@ public class NameNode implements INameNode{
 			}
 			BlockLocations.Builder blockobj = BlockLocations.newBuilder().setBlockNumber(random);
 			
+			//Record file to chunk relation now. Write to filetochunklist.txt when closing file
+			filelist.get(fileindex).Chunks.add(random);
+			
 			Collections.shuffle(DNlist);
 			for(int i=0;i<3;i++) //Select random 3 Datanodes
 			{
@@ -249,45 +327,6 @@ public class NameNode implements INameNode{
 			
 			blockobj.setBlockNumber(random);
 			response.setNewBlock(blockobj);
-			
-			File ftest = new File(fchunk_file);
-			ftest.createNewFile(); //creates a new file only if one doesnt exist
-			File ftest2 = new File("tmp.txt");
-			ftest.createNewFile(); 
-			
-			FileOutputStream fos = new FileOutputStream("tmp.txt");
-			FileInputStream fis = new FileInputStream(fchunk_file);
-		
-			BufferedReader br = new BufferedReader(new InputStreamReader(fis));
-			BufferedWriter bw = new BufferedWriter(new OutputStreamWriter(fos));
-		 
-			//line format : filename:chunk1,chunk2,chunk3
-			String lastline = null;
-			String line = null;
-			while ((line = br.readLine()) != null) 
-			{
-				line = line.replace("\n", "").replace("\r", "");
-				String[] fname_chunks = line.split(",");
-				if(fname.equals(fname_chunks[0]))
-				{
-					lastline = fname;
-					for(int i=1;i<fname_chunks.length;i++)
-					{
-						lastline += "," + fname_chunks[i];
-					}
-					response.setStatus(1);
-				}
-				else
-				{
-					bw.write(line + "\n");
-				}
-			}
-			bw.write(lastline+"," + Integer.toString(random)+"\n"); //inserted new chunk number
-			br.close();
-			bw.close();
-			fos.close();
-			fis.close();
-			ftest2.renameTo(ftest);
 		}
 		catch(Exception e)
 		{
