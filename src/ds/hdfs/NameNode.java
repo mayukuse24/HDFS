@@ -370,7 +370,7 @@ public class NameNode implements INameNode{
 			if(dninfo[dnid] == null)
 			{
 				DNlist.add(dnid);
-				dninfo[dnid] = new DataNode(deserObj.getLocation().getIp(),deserObj.getLocation().getPort());
+				dninfo[dnid] = new DataNode(deserObj.getLocation().getIp(),deserObj.getLocation().getPort(),deserObj.getLocation().getName());
 			}
 			
 			for(int i=0;i<deserObj.getBlockNumbersCount();i++)

@@ -138,7 +138,6 @@ public class DataNode implements IDataNode
             String line = null;
             while ((line = br.readLine()) != null) 
             {
-                System.out.println(line);
                 response.addData(ByteString.copyFrom(line.getBytes()));
             }
             br.close();
@@ -377,7 +376,6 @@ class RunnableDemo implements Callable<Integer>
         try 
         {
             System.out.println("Running " +  threadName );
-            System.out.println(passobj.toString());
             DataNodeLocation targetdn = passobj.getBlockInfo().getLocations(0);
 
             //remove a location from the locations list
@@ -386,7 +384,7 @@ class RunnableDemo implements Callable<Integer>
             passobj = passobj.toBuilder().setBlockInfo(temp).build();
 
             System.out.println(targetdn.toString());
-            System.out.println(passobj.toString());
+            System.out.println(temp.toString());
 
             // call writeblock rpc of targetdn and send deserObj
             Registry registry = LocateRegistry.getRegistry(targetdn.getIp(),targetdn.getPort());
