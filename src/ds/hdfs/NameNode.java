@@ -259,7 +259,7 @@ public class NameNode implements INameNode{
 		try
 		{
 			BlockLocationRequest deserObj = BlockLocationRequest.parseFrom(inp);
-			
+			this.printMsg("Read block request from client");
 			for(int i=0;i<deserObj.getBlockNumsCount();i++)
 			{
 				int blockno = deserObj.getBlockNums(i);
@@ -280,6 +280,7 @@ public class NameNode implements INameNode{
 				response.addBlockLocations(blockinfo);
 			}
 			
+			this.printMsg("Responding to readblock request");
 			response.setStatus(1);
 		}
 		catch(Exception e)
@@ -297,6 +298,7 @@ public class NameNode implements INameNode{
 		try
 		{
 			AssignBlockRequest deserObj = AssignBlockRequest.parseFrom(inp);
+			this.printMsg("Write Block Request from client");
 			String fname = new String();
 			int fileindex = -1;
 			for(int i=0;i<filelist.size();i++)
@@ -322,6 +324,8 @@ public class NameNode implements INameNode{
 			}
 			BlockLocations.Builder blockobj = BlockLocations.newBuilder().setBlockNumber(random);
 			
+			this.printMsg("Creating Assigning chunk number " + Integer.toString(random));
+			
 			//Record file to chunk relation now. Write to filetochunklist.txt when closing file
 			filelist.get(fileindex).Chunks.add(random);
 			
@@ -334,6 +338,8 @@ public class NameNode implements INameNode{
 			
 			blockobj.setBlockNumber(random);
 			response.setNewBlock(blockobj);
+			
+			this.printMsg("Responding to request for chunk" + Integer.toString(random));
 		}
 		catch(Exception e)
 		{
@@ -367,6 +373,7 @@ public class NameNode implements INameNode{
 			BlockReportRequest deserObj = BlockReportRequest.parseFrom(inp);
 			
 			int dnid = deserObj.getId();
+			this.printMsg("BlockRequest From DN" +Integer.toString(dnid));
 			if(dninfo[dnid] == null)
 			{
 				DNlist.add(dnid);
