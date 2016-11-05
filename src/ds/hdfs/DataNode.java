@@ -255,10 +255,8 @@ public class DataNode implements IDataNode
             for(int i=0; i<Count; i++)
             {
                 if(response.getStatus(i) < 0)
-                    System.out.println("Huston, we have got a Status " + response.getStatus(i));
-                else
                 {
-                    System.out.println(response.getStatus(i) + " in Block number " + i);
+                    System.out.println("Huston, we have got a Status " + response.getStatus(i));
                     AllOk = false;
                 }
             }
