@@ -114,7 +114,7 @@ public class Client
 
     public void PutFile(String Filename) //Would like to try this
     {
-        //
+        System.out.println("Going to put a file");
         File File = new File(Filename);
         BufferedInputStream bis;
         try{
@@ -152,13 +152,16 @@ public class Client
         long File_Size = File.length();
         int BytesPerSplit = 64*1024*1024; // 64 MB
         byte[] Buffer = new byte[BytesPerSplit];
-        long NumSplits = File_Size % BytesPerSplit;
+        long NumSplits = File_Size / BytesPerSplit;
         long RemainingBytes = File_Size - (NumSplits * BytesPerSplit);
         byte[] LeftBuffer = new byte[(int)RemainingBytes];
+        System.out.println(" File Size = " + File_Size + " NumSplits = " + NumSplits + " RemainingBytes " + RemainingBytes);
+        System.out.println(" BytesPerSplit = " + BytesPerSplit );
 
+
+        int tmp;
         for(int i=0; i<=NumSplits; i++)
         {
-            int tmp;
             try{
                 if(i == NumSplits)
                 {
@@ -172,7 +175,6 @@ public class Client
                 System.out.println("IOException");
                 return;
             }
-
             //Get a BlockNumber for this Chunk
             AssignBlockRequest.Builder BlockReq = AssignBlockRequest.newBuilder();
             BlockReq.setHandle(FileHandle);
@@ -219,7 +221,7 @@ public class Client
             //Removed the one to which it is being sent
             BlockWrite.setBlockInfo(SendBlock); //Not Same as the one we got from the NN 
             //Set the ByteString
-            if(i == NumSplits) //Use LeftBuffer
+            if(i == NumSplits) //Use LeftBuffer because the file has some bytes left
             {
                 BlockWrite.addData(ByteString.copyFrom(LeftBuffer));
             }
@@ -231,7 +233,7 @@ public class Client
             //Send the WriteBLock to the Data Node
             byte[] Resp;
             try{
-                Resp= this.DNStub.writeBlock(BlockWrite.build().toByteArray());
+                Resp = this.DNStub.writeBlock(BlockWrite.build().toByteArray());
             }catch(Exception e){
                 System.out.println("Remote Error while writing to the DN!");
                 return;
@@ -246,7 +248,7 @@ public class Client
             if(Wbr.getStatus() < 0)
             {
                 System.out.println("We have a bad WriteBlockResponse Status = " + Wbr.getStatus());
-                return;
+                return; //Will be problem if half of the file is already written Maybe
             }
         }
 
@@ -270,12 +272,11 @@ public class Client
         if(Resp.getStatus() < 0)
             System.out.println("We have a bad CloseFileResponse Status = " + Resp.getStatus());
         else
-            System.out.println("Write to HDFS Successful");
+            System.out.println("Put to HDFS Successful");
     }
 
     public void GetFile(String FileName)
     {
-
         OpenFileRequest.Builder ReadReq = OpenFileRequest.newBuilder();
         ReadReq.setFileName(FileName);
         ReadReq.setForRead(true);  //For Reading
@@ -302,7 +303,7 @@ public class Client
 
         //Getting Locations of all the blocks
         BlockLocationRequest.Builder BlockLocation = BlockLocationRequest.newBuilder();
-        for(int Blocknums: response.getBlockNumsList())
+        for(int Blocknums : response.getBlockNumsList())
         {
             //For each block, ask for DN details for NN
             BlockLocation.addBlockNums(Blocknums);
@@ -364,7 +365,7 @@ public class Client
             }
         }
 
-        //Copy the FileBytes to a byte array
+        //Copy the FileBytes(ByteString) to a byte array
         byte[] File = new byte[FileBytes.size()];
         FileBytes.copyTo(File, 0);
 
@@ -378,7 +379,7 @@ public class Client
             return;
         }
         //System.out.println("File Retrieve Successful");
-        
+
         //Close File and get Status
         CloseFileRequest.Builder CloseFile = CloseFileRequest.newBuilder();
         CloseFile.setHandle(FileHandle);
@@ -428,7 +429,7 @@ public class Client
         }
         //Get the list of files
         System.out.println("The Following are the files in the hdfs");
-        for(String FileName: Resp.getFileNamesList())
+        for(String FileName : Resp.getFileNamesList())
         {
             System.out.println(FileName); //Print Out Each Filename
         }
@@ -437,7 +438,6 @@ public class Client
     public static void main(String[] args) throws RemoteException, UnknownHostException
     {
         // To read config file and Connect to NameNode
-        //
         //Intitalize the Client
         Client Me = new Client();
         System.out.println("This program is written by Shaleen Garg(201401069) & Vinay Khandelwal(201401139)"); 
@@ -445,18 +445,20 @@ public class Client
 
         //Get the Name Node Stub
         //client_config of format Server;IP;Port
-        String Config = Me.FileTail("client_config.txt");
-        String[] Split_Config = Config.split(";");
-        Me.NNStub = Me.GetNNStub(Split_Config[0], Split_Config[1], Integer.parseInt(Split_Config[2]));
+
+           String Config = Me.FileTail("client_config.txt");
+           String[] Split_Config = Config.split(";");
+           Me.NNStub = Me.GetNNStub(Split_Config[0], Split_Config[1], Integer.parseInt(Split_Config[2]));
 
         System.out.println("Welcome to SM-HDFS!!");
-        Scanner Scan = new Scanner(System.in);            
+        Scanner Scan = new Scanner(System.in);
         while(true)
         {
             //Scanner, prompt and then call the functions according to the command
             System.out.print("$> "); //Prompt
-            String Command = Scan.next();
+            String Command = Scan.nextLine();
             String[] Split_Commands = Command.split(" ");
+
             if(Split_Commands[0].equals("help"))
             {
                 System.out.println("The following are the Supported Commands");
@@ -469,11 +471,11 @@ public class Client
                 String Filename;
                 try{
                     Filename = Split_Commands[1];
+                    Me.PutFile(Filename);
                 }catch(ArrayIndexOutOfBoundsException e){
                     System.out.println("Please type 'help' for instructions");
                     continue;
                 }
-                Me.PutFile(Filename);
             }
             else if(Split_Commands[0].equals("get"))
             {
@@ -481,11 +483,11 @@ public class Client
                 String Filename;
                 try{
                     Filename = Split_Commands[1];
+                    Me.GetFile(Filename);
                 }catch(ArrayIndexOutOfBoundsException e){
                     System.out.println("Please type 'help' for instructions");
                     continue;
                 }
-                Me.GetFile(Filename);
             }
             else if(Split_Commands[0].equals("list"))
             {
