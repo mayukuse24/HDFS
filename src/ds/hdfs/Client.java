@@ -180,14 +180,18 @@ public class Client
             BlockReq.setHandle(FileHandle);
             byte[] Res;
             try{
+                System.out.println("Waiting for assignBlock Response");
                 Res = this.NNStub.assignBlock(BlockReq.build().toByteArray());
+                System.out.println("Got BlockRequest Response");
             }catch(Exception e){
                 System.out.println("Remote Exception while OpenFile Request!!");
                 return;
             }
             AssignBlockResponse BlockRes;
             try{
+                System.out.println("Waiting for AssignBlockResponse");
                 BlockRes = AssignBlockResponse.parseFrom(Res);
+                System.out.println("Got AssignBlockResponse");
             }catch(Exception e){
                 System.out.println("Remote Procedure Call error while BlockRequest");
                 return;
@@ -252,6 +256,7 @@ public class Client
                 return; //Will be problem if half of the file is already written Maybe
             }
         }
+
 
         //Close File and get Status
         CloseFileRequest.Builder CloseFile = CloseFileRequest.newBuilder();
