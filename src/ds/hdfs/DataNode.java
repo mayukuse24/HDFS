@@ -277,7 +277,7 @@ public class DataNode implements IDataNode
             IDataNode stub = (IDataNode) UnicastRemoteObject.exportObject(this, 0);
             System.setProperty("java.rmi.server.hostname", IP);
             Registry registry = LocateRegistry.getRegistry(Port);
-            registry.bind(Name, stub);
+            registry.rebind(Name, stub);
             System.out.println("\nDataNode connected to RMIregistry\n");
         }catch(Exception e){
             System.err.println("Server Exception: " + e.toString());
