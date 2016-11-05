@@ -1,2 +1,2 @@
-//this is the NameNode Config File for the DataNode
-Server;10.1.39.133;2002
+//this is the NameNode Config File for the DataNode and the Client
+NN;10.1.39.133;2002

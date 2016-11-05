@@ -320,7 +320,7 @@ public class DataNode implements IDataNode
         //Bind The DataNode Self
         String Config = Me.FileTail("dn_config.txt");
         String[] Split_Config = Config.split(";");
-        Me.MyName = "Server" + Split_Config[0];
+        Me.MyName = "DN" + Split_Config[0];
         Me.MyID = Integer.parseInt(Split_Config[0]);
         Me.MyIP = Split_Config[1];
         Me.MyPort = Integer.parseInt(Split_Config[2]);        

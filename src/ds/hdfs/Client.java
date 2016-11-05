@@ -445,9 +445,9 @@ public class Client
         System.out.println("Acquiring NameNode stub");
 
         //Get the Name Node Stub
-        //client_config of format Server;IP;Port
+        //nn_details contain NN details in the format Server;IP;Port
 
-           String Config = Me.FileTail("client_config.txt");
+           String Config = Me.FileTail("nn_details.txt");
            String[] Split_Config = Config.split(";");
            Me.NNStub = Me.GetNNStub(Split_Config[0], Split_Config[1], Integer.parseInt(Split_Config[2]));
 
