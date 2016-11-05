@@ -206,7 +206,8 @@ public class Client
             String SendToIP = DNLocations.get(0).getIp();
             int ToPort = DNLocations.get(0).getPort();
             //Get the DNstub
-            this.DNStub = GetDNStub("Server", SendToIP, ToPort);
+            //this.DNStub = GetDNStub("Server", SendToIP, ToPort);
+            this.DNStub = GetDNStub(DNLocations.get(0).getName(), SendToIP, ToPort);
 
             //Remove the first DN from the DataNodeLocation list
             int No_DNLocations = newBlock.getLocationsCount();
@@ -334,7 +335,7 @@ public class Client
         {
             int BlockNumber = Loc.getBlockNumber();
             DataNodeLocation Location = Loc.getLocations(0);  //Getting zeroth Data Nodes
-            this.DNStub = GetDNStub("Server", Location.getIp(), Location.getPort());
+            this.DNStub = GetDNStub(Location.getName(), Location.getIp(), Location.getPort());
             //Request DN for the block and stitch it to the file
 
             ReadBlockRequest.Builder BlockReq = ReadBlockRequest.newBuilder();

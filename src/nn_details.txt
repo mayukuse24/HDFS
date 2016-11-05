@@ -1,0 +1,2 @@
+//this is the NameNode Config File for the DataNode
+Server;10.1.39.133;2002
