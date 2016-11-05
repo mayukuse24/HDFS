@@ -188,13 +188,13 @@ public class DataNode implements IDataNode
             out.close();
 
             File ftest2 = new File(this.MyChunksFile);
-			ftest2.createNewFile(); //creates a new file only if one doesnt exist
-			
+            ftest2.createNewFile(); //creates a new file only if one doesnt exist
+
             //Open ChunksFile.txt and write in chunknames only
-			BufferedWriter write = new BufferedWriter(new FileWriter(this.MyChunksFile, true));
-			write.append(fname + "\n");
-			write.close();
-			
+            BufferedWriter write = new BufferedWriter(new FileWriter(this.MyChunksFile, true));
+            write.append(fname + "\n");
+            write.close();
+
             int isSuccess = 1;
             if(future != null)
             {
@@ -212,7 +212,7 @@ public class DataNode implements IDataNode
         return response.build().toByteArray();
     }
 
-    public void BlockReport() //Not tested
+    public void BlockReport() throws IOException//Not tested
     {
         BlockReportRequest.Builder BlockReport = BlockReportRequest.newBuilder();
         BlockReport.setId(this.MyID);
@@ -228,25 +228,17 @@ public class DataNode implements IDataNode
         FileReader fileReader;
         try{
             File ftest2 = new File(this.MyChunksFile);
-			ftest2.createNewFile(); //creates a new file only if one doesnt exist
+            ftest2.createNewFile(); //creates a new file only if one doesnt exist
             fileReader = new FileReader(ftest2);
         }catch(Exception e){
             System.out.println("Unable to open file in DataNode in BlockReport");
             return;
         }
         BufferedReader br = new BufferedReader(fileReader);
-        String line = "";
+        String line = null;
         // if no more lines the readLine() returns null
-        while (line != null) 
+        while ((line = br.readLine()) != null) 
         {
-            try{
-                line = br.readLine();
-                if(line == null)
-                    return;
-            }catch(Exception e){
-                System.out.println("Unable to read the ChunkFile");
-                return;
-            }
             BlockReport.addBlockNumbers(Integer.parseInt(line)); //The ChunkFile contains the chunknumbers only     
         }
         byte[] Response;
@@ -259,24 +251,26 @@ public class DataNode implements IDataNode
         BlockReportResponse response;
         try{
             response = BlockReportResponse.parseFrom(Response);
+            int Count = response.getStatusCount();
+            boolean AllOk = true;
+            for(int i=0; i<Count; i++)
+            {
+                if(response.getStatus(i) < 0)
+                    System.out.println("Huston, we have got a Status " + response.getStatus(i));
+                else
+                {
+                    System.out.println(response.getStatus(i) + " in Block number " + i);
+                    AllOk = false;
+                }
+            }
+            if(AllOk == true)
+                System.out.println("BlockReport Sent !!");
+            else
+                System.out.println("Failure while sending BlockReport");
         }catch(Exception e){
             System.out.println("There is a problem in opening Proto in BlockReportResponse");
             return;
         }
-        int Count = response.getStatusCount();
-        boolean AllOk = true;
-        for(int i=0; i<Count; i++)
-        {
-            if(response.getStatus(i) < 0)
-                System.out.println("Huston, we have got a Status " + response.getStatus(i));
-            else
-            {
-                System.out.println(response.getStatus(i) + " in Block number " + i);
-                AllOk = false;
-            }
-        }
-        if(AllOk == true)
-            System.out.println("BlockReport Sent !!");
     }
 
     public void BindServer(String Name, String IP, int Port)
@@ -287,10 +281,8 @@ public class DataNode implements IDataNode
             System.setProperty("java.rmi.server.hostname", IP);
             Registry registry = LocateRegistry.getRegistry(Port);
             registry.bind(Name, stub);
-            System.out.println("\nDataNode is ready\n");
-        }
-        catch(Exception e)
-        {
+            System.out.println("\nDataNode connected to RMIregistry\n");
+        }catch(Exception e){
             System.err.println("Server Exception: " + e.toString());
             e.printStackTrace();
         }
@@ -304,14 +296,16 @@ public class DataNode implements IDataNode
             {
                 Registry registry = LocateRegistry.getRegistry(IP, Port);
                 INameNode stub = (INameNode) registry.lookup(Name);
+                System.out.println("NameNode Found");
                 return stub;
             }catch(Exception e){
+                System.out.println("NameNode still not Found");
                 continue;
             }
         }
     }
 
-    public static void main(String args[]) throws InvalidProtocolBufferException 
+    public static void main(String args[]) throws InvalidProtocolBufferException, IOException
     {
         //Define a Datanode Me
         DataNode Me = new DataNode();        
