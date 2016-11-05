@@ -238,7 +238,9 @@ public class Client
             //Send the WriteBLock to the Data Node
             byte[] Resp;
             try{
+                System.out.println("Waiting for WriteBlock Response");
                 Resp = this.DNStub.writeBlock(BlockWrite.build().toByteArray());
+                System.out.println("Got WriteBlock Response");
             }catch(Exception e){
                 System.out.println("Remote Error while writing to the DN!");
                 return;
@@ -263,14 +265,18 @@ public class Client
         CloseFile.setHandle(FileHandle);
         byte[] FinResp;
         try{
+            System.out.println("Waiting for closeFile Response");
             FinResp = this.NNStub.closeFile(CloseFile.build().toByteArray());
+            System.out.println("Got closeFile Response");
         }catch(Exception e){
             System.out.println("Unable to call CloseFile from put");
             return; 
         }
         CloseFileResponse Resp;
         try{
+            System.out.println("Waiting for closeFileResponse Response");
             Resp = CloseFileResponse.parseFrom(FinResp);
+            System.out.println("Got closeFileResponse Response");
         }catch(Exception e){
             System.out.println("Unable to get proto from CloseFileResponse");
             return;
@@ -452,9 +458,9 @@ public class Client
         //Get the Name Node Stub
         //nn_details contain NN details in the format Server;IP;Port
 
-           String Config = Me.FileTail("nn_details.txt");
-           String[] Split_Config = Config.split(";");
-           Me.NNStub = Me.GetNNStub(Split_Config[0], Split_Config[1], Integer.parseInt(Split_Config[2]));
+        String Config = Me.FileTail("nn_details.txt");
+        String[] Split_Config = Config.split(";");
+        Me.NNStub = Me.GetNNStub(Split_Config[0], Split_Config[1], Integer.parseInt(Split_Config[2]));
 
         System.out.println("Welcome to SM-HDFS!!");
         Scanner Scan = new Scanner(System.in);
