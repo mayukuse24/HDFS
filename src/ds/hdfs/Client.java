@@ -352,6 +352,7 @@ public class Client
         ByteString FileBytes = ByteString.EMPTY; //Will Contain all the bytes of the file
         for(BlockLocations Loc : BlockLocationRes.getBlockLocationsList())
         {
+            System.out.println("Loop Start");
             int BlockNumber = Loc.getBlockNumber();
             DataNodeLocation Location = Loc.getLocations(0);  //Getting zeroth Data Nodes
             this.DNStub = GetDNStub(Location.getName(), Location.getIp(), Location.getPort());
@@ -361,7 +362,9 @@ public class Client
             BlockReq.setBlockNumber(BlockNumber);
             byte[] BlockRes;
             try{
+                System.out.println("Waiting for ReadBlock response");
                 BlockRes = this.DNStub.readBlock(BlockReq.build().toByteArray());
+                System.out.println("Got ReadBlock response");
             }catch(Exception e){
                 System.out.println("Remote Exception while ReadFileRequest in Getfile!!");
                 return;
@@ -379,27 +382,40 @@ public class Client
                 return;
             }
             //FileBytes = FileBytes.concat(BlockResp.getData(0));
-            for(ByteString A : BlockResp.getDataList())
-            {
-                FileBytes = FileBytes.concat(A);
-            }
-        }
 
+            try{
+                FileOutputStream fos = new FileOutputStream(FileName, true);
+                for(ByteString A : BlockResp.getDataList())
+                {
+                    String test = A.toStringUtf8();
+                    test += "\n";
+                    fos.write(test.getBytes());
+                }
+                fos.close();
+            }catch(Exception e){
+                System.out.println("IOError while writing to the file");
+                return;
+            }
+            System.out.println("Loop end");
+            //System.out.println("FileBytes size = " + FileBytes.size());
+        }
+        /*
+        //System.out.println("File retireved");
         //Copy the FileBytes(ByteString) to a byte array
         byte[] File = new byte[FileBytes.size()];
         FileBytes.copyTo(File, 0);
-        System.out.println();
+        System.out.println(File);
         //Write File to the Disk
         try{
-            FileOutputStream fos = new FileOutputStream(FileName);
-            fos.write(File);
-            fos.close();
+        FileOutputStream fos = new FileOutputStream(FileName);
+        fos.write(File);
+        fos.close();
         }catch(Exception e){
-            System.out.println("IOError while writing to the file");
-            return;
+        System.out.println("IOError while writing to the file");
+        return;
         }
         //System.out.println("File Retrieve Successful");
-
+        */
         //Close File and get Status
         CloseFileRequest.Builder CloseFile = CloseFileRequest.newBuilder();
         CloseFile.setHandle(FileHandle);
