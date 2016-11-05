@@ -384,9 +384,8 @@ class RunnableDemo implements Callable<Integer>
             System.out.println(targetdn.toString());
             System.out.println(passobj.toString());
 
-            //TODO: call writeblock rpc of targetdn and send deserObj
+            // call writeblock rpc of targetdn and send deserObj
             Registry registry = LocateRegistry.getRegistry(targetdn.getIp(),targetdn.getPort());
-            //IDataNode stub = (IDataNode)registry.lookup("Server");
             IDataNode stub = (IDataNode)registry.lookup(targetdn.getName());
             WriteBlockResponse response = WriteBlockResponse.parseFrom(stub.writeBlock(passobj.toByteArray()));
 
