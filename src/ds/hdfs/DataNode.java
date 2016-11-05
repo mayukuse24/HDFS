@@ -187,6 +187,14 @@ public class DataNode implements IDataNode
             }
             out.close();
 
+            File ftest2 = new File(this.MyChunksFile);
+			ftest2.createNewFile(); //creates a new file only if one doesnt exist
+			
+            //Open ChunksFile.txt and write in chunknames only
+			BufferedWriter write = new BufferedWriter(new FileWriter(this.MyChunksFile, true));
+			write.append(fname + "\n");
+			write.close();
+			
             int isSuccess = 1;
             if(future != null)
             {

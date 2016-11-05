@@ -7,6 +7,7 @@ import java.io.FileInputStream;
 import java.io.FileNotFoundException;
 import java.io.FileOutputStream;
 import java.io.FileWriter;
+import java.io.IOException;
 import java.io.InputStreamReader;
 import java.io.OutputStreamWriter;
 import java.net.UnknownHostException;
@@ -145,6 +146,9 @@ public class NameNode implements INameNode{
 			else //write request
 			{
 				filelist.add(new FileInfo(filename,filehandle,true));
+				
+				File ftest = new File(fchunk_file);
+				ftest.createNewFile(); //creates a new file only if one doesnt exist
 				
 				//Open filechunkslist.txt and write in filename only
 				BufferedWriter out = new BufferedWriter(new FileWriter(fchunk_file, true));
@@ -408,10 +412,34 @@ public class NameNode implements INameNode{
 		System.out.println(msg);		
 	}
 	
-	
-	public static void main(String[] args) throws RemoteException,InterruptedException, UnknownHostException
+	public static void main(String[] args) throws InterruptedException, NumberFormatException, IOException
 	{
-		NameNode NN = new NameNode("10.1.39.21",2000,"Server");
+		FileInputStream fis = new FileInputStream("nn_details.txt");
+		
+		//Construct BufferedReader from InputStreamReader
+		BufferedReader br = new BufferedReader(new InputStreamReader(fis));
+
+		NameNode NN = null;
+		
+		String line = null;
+		while ((line = br.readLine()) != null) 
+		{
+			System.out.println(line);
+			String[] Split_Config = line.split(";");
+			if("NN".equals(Split_Config[0]))
+			{
+				NN = new NameNode(Split_Config[1],Integer.parseInt(Split_Config[2]),Split_Config[0]);
+				break;
+			}
+		}
+		br.close();
+		
+		if(NN == null)
+		{
+			System.out.println("Failed to configure NN. Check nn_details.txt file");
+			System.exit(-1);
+		}
+		
 		NN.dninfo = new DataNode[15000];
 		NN.fchunk_file = "filetochunklist.txt";
 		
@@ -435,8 +463,6 @@ public class NameNode implements INameNode{
 			System.err.println("Server exception: " + e.toString() + " Failed to start server");
 			e.printStackTrace();
 		}
-		
-		
 	}
 	
 	//TEST CODE
