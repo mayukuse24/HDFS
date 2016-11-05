@@ -164,7 +164,7 @@ public class DataNode implements IDataNode
             if(deserObj.getBlockInfo().getLocationsCount() != 0) //Threading if another replication required
             {
                 RunnableDemo nextcall = new RunnableDemo("Thread-1",deserObj);
-                final ExecutorService service = Executors.newFixedThreadPool(2);
+                final ExecutorService service = Executors.newFixedThreadPool(3);
                 future = service.submit(nextcall);    			
             }
 
@@ -191,7 +191,7 @@ public class DataNode implements IDataNode
 
             //Open ChunksFile.txt and write in chunknames only
             BufferedWriter write = new BufferedWriter(new FileWriter(this.MyChunksFile, true));
-            write.append(fname + "\n");
+            write.append(chunkno + "\n");
             write.close();
 
             int isSuccess = 1;
@@ -379,7 +379,7 @@ class RunnableDemo implements Callable<Integer>
             DataNodeLocation targetdn = passobj.getBlockInfo().getLocations(0);
 
             //remove a location from the locations list
-            BlockLocations temp = passobj.getBlockInfo().toBuilder().removeLocations(0).build();
+            BlockLocations temp = passobj.getBlockInfo().toBuilder().removeLocations(0).build(); //temp holds DN info of everything but removed dn
             passobj = passobj.toBuilder().clearBlockInfo().build();
             passobj = passobj.toBuilder().setBlockInfo(temp).build();
 
