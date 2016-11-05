@@ -294,14 +294,18 @@ public class Client
         ReadReq.setForRead(true);  //For Reading
         byte[] Response;
         try{
+            System.out.println("Waiting for openFile response");
             Response = this.NNStub.openFile(ReadReq.build().toByteArray());
+            System.out.println("Get openFile response");
         }catch(Exception e){
             System.out.println("Remote Exception while OpenFile Request in Getfile!!");
             return;
         }
         OpenFileResponse response; 
-        try{
+        try{  
+            System.out.println("Waiting for OpenFileResponse response");
             response = OpenFileResponse.parseFrom(Response);
+            System.out.println("Got OpenFileResponse response");
         }catch(Exception e){
             System.out.println("Proto Problems in ReadRequest Getfile");
             return;
@@ -321,15 +325,19 @@ public class Client
             BlockLocation.addBlockNums(Blocknums);
         }
         byte[] BlockLocationResp;
-        try{
+        try{   
+            System.out.println("Waiting for getBlockLocations response");
             BlockLocationResp = this.NNStub.getBlockLocations(BlockLocation.build().toByteArray());
+            System.out.println("Got getBlockLocations response");
         }catch(Exception e){
             System.out.println("Remote Exception while OpenFile Request in Getfile!!");
             return;
         }
         BlockLocationResponse BlockLocationRes; 
         try{
+            System.out.println("Waiting for BlockLocationResponse response");
             BlockLocationRes = BlockLocationResponse.parseFrom(BlockLocationResp);
+            System.out.println("Got BlockLocationResponse response");
         }catch(Exception e){
             System.out.println("Proto Problems in ReadRequest Getfile");
             return;
@@ -380,7 +388,7 @@ public class Client
         //Copy the FileBytes(ByteString) to a byte array
         byte[] File = new byte[FileBytes.size()];
         FileBytes.copyTo(File, 0);
-
+        System.out.println();
         //Write File to the Disk
         try{
             FileOutputStream fos = new FileOutputStream(FileName);
@@ -440,11 +448,15 @@ public class Client
             return;
         }
         //Get the list of files
+        //
         System.out.println("The Following are the files in the hdfs");
+        System.out.println(Resp.getFileNamesCount());
         for(String FileName : Resp.getFileNamesList())
         {
+            //System.out.println("Hello");
             System.out.println(FileName); //Print Out Each Filename
         }
+        return;
     }
 
     public static void main(String[] args) throws RemoteException, UnknownHostException
