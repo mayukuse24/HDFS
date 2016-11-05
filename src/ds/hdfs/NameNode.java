@@ -51,11 +51,13 @@ public class NameNode implements INameNode{
 		String ip;
 		int port;
 		int counter;
-		public DataNode(String addr,int p)
+		String serverName;
+		public DataNode(String addr,int p,String sname)
 		{
 			ip = addr;
 			port = p;
 			counter = 0;
+			serverName = sname;
 		}
 	}
 	
@@ -271,7 +273,8 @@ public class NameNode implements INameNode{
 					int dnid = dnlist.get(j);
 					DataNodeLocation dnobj = DataNodeLocation.newBuilder()
 							.setIp(this.dninfo[dnid].ip)
-							.setPort(this.dninfo[dnid].port).build();
+							.setPort(this.dninfo[dnid].port)
+							.setName(this.dninfo[dnid].serverName).build();
 					blockinfo.addLocations(dnobj);
 				}
 				response.addBlockLocations(blockinfo);
@@ -325,7 +328,7 @@ public class NameNode implements INameNode{
 			Collections.shuffle(DNlist);
 			for(int i=0;i<3;i++) //Select random 3 Datanodes
 			{
-				DataNodeLocation dnobj = DataNodeLocation.newBuilder().setIp(dninfo[DNlist.get(i)].ip).setPort(dninfo[DNlist.get(i)].port).build();
+				DataNodeLocation dnobj = DataNodeLocation.newBuilder().setIp(dninfo[DNlist.get(i)].ip).setPort(dninfo[DNlist.get(i)].port).setName(dninfo[DNlist.get(i)].serverName).build();
 				blockobj.addLocations(dnobj);
 			}
 			
