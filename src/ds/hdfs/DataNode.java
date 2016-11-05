@@ -227,9 +227,11 @@ public class DataNode implements IDataNode
         //Add All the block numbers I posses
         FileReader fileReader;
         try{
-            fileReader = new FileReader(new File(this.MyChunksFile));
+            File ftest2 = new File(this.MyChunksFile);
+			ftest2.createNewFile(); //creates a new file only if one doesnt exist
+            fileReader = new FileReader(ftest2);
         }catch(Exception e){
-            System.out.println("Unable to open file in DataNode");
+            System.out.println("Unable to open file in DataNode in BlockReport");
             return;
         }
         BufferedReader br = new BufferedReader(fileReader);
