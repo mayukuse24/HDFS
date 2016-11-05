@@ -16,6 +16,8 @@ import com.google.protobuf.ByteString;
 import com.google.protobuf.InvalidProtocolBufferException;
 
 import java.io.*;
+import java.nio.charset.Charset;
+
 import ds.hdfs.hdfsformat.*;
 import ds.hdfs.IDataNode.*;
 
@@ -134,13 +136,31 @@ public class DataNode implements IDataNode
             String fname = Integer.toString(chunkno) + ".chunk";
 
             FileInputStream fis = new FileInputStream(fname);
-            BufferedReader br = new BufferedReader(new InputStreamReader(fis));
+            BufferedReader br = new BufferedReader(new InputStreamReader(fis,Charset.forName("UTF-8")));
+            
+            int c;
+            String line = "";
+            while((c = br.read()) != -1) 
+            {
+            	char character = (char) c;
+            	line += character;
+            	if(character == '\n')
+            	{
+            		response.addData(ByteString.copyFrom(line.getBytes()));
+            		line = "";
+            	}
+            }
+            response.addData(ByteString.copyFrom(line.getBytes()));
+            br.close();
+            /*
             String line = null;
             while ((line = br.readLine()) != null) 
             {
                 response.addData(ByteString.copyFrom(line.getBytes()));
             }
             br.close();
+            */
+            
         }
         catch(Exception e)
         {

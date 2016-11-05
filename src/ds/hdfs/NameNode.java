@@ -106,13 +106,14 @@ public class NameNode implements INameNode{
 					
 			response.setStatus(-1); //set fail as default
 			
-			int random = (int)(Math.random() * 10000 + 1); //get random chunk number
+			int random = (int)(Math.random() * 10000) + 1; //get random chunk number
 			while(findInFilelist(random)) //chunk is unique
 			{
 				random++;
 			}
 			int filehandle = random; //assign a random unique number	
-					
+			
+			System.out.println("filehandle for " + filename + " = " + Integer.toString(filehandle));
 			response.setHandle(filehandle);
 			
 			if(toRead) //read request
@@ -132,10 +133,11 @@ public class NameNode implements INameNode{
 				while ((line = br.readLine()) != null) 
 				{
 					System.out.println(line);
-					String[] fname_chunks = line.split(",");
+					String[] fname_chunks = line.split(":");
 					if(filename.equals(fname_chunks[0]))
 					{
-						for(int i=1;i<fname_chunks.length;i++)
+						fname_chunks = fname_chunks[1].split(",");
+						for(int i=0;i<fname_chunks.length;i++)
 						{
 							response.addBlockNums(Integer.parseInt(fname_chunks[i]));
 						}
@@ -148,14 +150,14 @@ public class NameNode implements INameNode{
 			else //write request
 			{
 				filelist.add(new FileInfo(filename,filehandle,true));
-				
+				/*
 				File ftest = new File(fchunk_file);
 				ftest.createNewFile(); //creates a new file only if one doesnt exist
 				
 				//Open filechunkslist.txt and write in filename only
 				BufferedWriter out = new BufferedWriter(new FileWriter(fchunk_file, true));
 				out.append(filename+"\n");
-				out.close();
+				out.close();*/
 				response.setStatus(1);
 			}
 		}
