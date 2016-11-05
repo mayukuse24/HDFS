@@ -324,7 +324,7 @@ public class NameNode implements INameNode{
 			}
 			BlockLocations.Builder blockobj = BlockLocations.newBuilder().setBlockNumber(random);
 			
-			this.printMsg("Creating Assigning chunk number " + Integer.toString(random));
+			this.printMsg("Creating Assigning chunk number " + Integer.toString(random) + " filename " + fname + " for filehandle " + Integer.toString(fileindex));
 			
 			//Record file to chunk relation now. Write to filetochunklist.txt when closing file
 			filelist.get(fileindex).Chunks.add(random);
@@ -339,7 +339,7 @@ public class NameNode implements INameNode{
 			blockobj.setBlockNumber(random);
 			response.setNewBlock(blockobj);
 			
-			this.printMsg("Responding to request for chunk" + Integer.toString(random));
+			this.printMsg("Responding to writeblock request for chunk" + Integer.toString(random));
 		}
 		catch(Exception e)
 		{
@@ -356,9 +356,31 @@ public class NameNode implements INameNode{
 	{
 		ListFilesResponse.Builder response = ListFilesResponse.newBuilder();
 		
-		for(int i=0;i<filelist.size();i++)
+		try
 		{
-			response.addFileNames(filelist.get(i).filename);
+			File ftest = new File(fchunk_file);
+			ftest.createNewFile(); //creates a new file only if one doesnt exist
+			
+			FileInputStream fis = new FileInputStream(fchunk_file);
+			
+			//Construct BufferedReader from InputStreamReader
+			BufferedReader br = new BufferedReader(new InputStreamReader(fis));
+		 
+			//line format : filename:chunk1,chunk2,chunk3
+			String line = null;
+			while ((line = br.readLine()) != null) 
+			{
+				String[] fname_chunks = line.split(":");
+				response.addFileNames(fname_chunks[0]);
+			}
+			
+			response.setStatus(1);
+			br.close();
+		}catch(Exception e)
+		{
+			System.err.println("Error at list "+ e.toString());
+			e.printStackTrace();
+			response.setStatus(-1);
 		}
 		return response.build().toByteArray();
 	}
