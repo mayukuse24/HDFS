@@ -1,2 +1,2 @@
-//Each DataNode has this config file: It contains the UniqueIdentifier(Server Name), IP, PORT 
+//Each DataNode has this config file: It contains its UniqueIdentifier(Server Name), IP, PORT 
 1;10.1.39.113;2002
