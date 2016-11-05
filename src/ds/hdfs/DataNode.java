@@ -231,7 +231,7 @@ public class DataNode implements IDataNode
             ftest2.createNewFile(); //creates a new file only if one doesnt exist
             fileReader = new FileReader(ftest2);
         }catch(Exception e){
-            System.out.println("Unable to open file in DataNode in BlockReport");
+            System.out.println("Unable to open file in DataNode BlockReport");
             return;
         }
         BufferedReader br = new BufferedReader(fileReader);
