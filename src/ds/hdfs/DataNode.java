@@ -204,7 +204,7 @@ public class DataNode implements IDataNode
         return response.build().toByteArray();
     }
 
-    public void BlockReport() //Not complete
+    public void BlockReport() //Not tested
     {
         BlockReportRequest.Builder BlockReport = BlockReportRequest.newBuilder();
         BlockReport.setId(this.MyID);
