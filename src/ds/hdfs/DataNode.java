@@ -144,7 +144,7 @@ public class DataNode implements IDataNode
             {
             	char character = (char) c;
             	line += character;
-            	if(character == '\n')
+            	if(character == '\n' || line.length() > 100)
             	{
             		response.addData(ByteString.copyFrom(line.getBytes()));
             		line = "";
@@ -152,15 +152,18 @@ public class DataNode implements IDataNode
             }
             response.addData(ByteString.copyFrom(line.getBytes()));
             br.close();
+            
             /*
             String line = null;
             while ((line = br.readLine()) != null) 
             {
-                response.addData(ByteString.copyFrom(line.getBytes()));
+            	if(line.substring(line.length() - 1) == "\n")
+            		response.addData(ByteString.copyFrom((line+"\n").getBytes()));
+            	else
+            		response.addData(ByteString.copyFrom(line.getBytes()));
             }
             br.close();
             */
-            
         }
         catch(Exception e)
         {
