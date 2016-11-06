@@ -388,7 +388,7 @@ public class Client
                 for(ByteString A : BlockResp.getDataList())
                 {
                     String test = A.toStringUtf8();
-                    test += "\n";
+                    //test += "\n";
                     fos.write(test.getBytes());
                 }
                 fos.close();
