@@ -1,8 +1,9 @@
 package ds.mapreduce;
 
 import java.rmi.RemoteException;
+import java.rmi.Remote;
 
-public interface IJobTracker {
+public interface IJobTracker extends Remote{
 	
 	/* JobSubmitResponse jobSubmit(JobSubmitRequest) */
 	byte[] jobSubmit(byte[] inp) throws RemoteException;
