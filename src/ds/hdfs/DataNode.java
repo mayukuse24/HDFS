@@ -189,7 +189,6 @@ public class DataNode implements IDataNode
             {
                 RunnableDemo nextcall = new RunnableDemo("Thread-1",deserObj);
                 final ExecutorService service = Executors.newFixedThreadPool(3);
-                final ExecutorService seice = Executors.newFixedThreadPool(3);
                 future = service.submit(nextcall);    			
             }
 
