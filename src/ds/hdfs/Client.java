@@ -16,8 +16,8 @@ import com.google.protobuf.ByteString;
 public class Client
 {
     //Variables Required
-    protected INameNode NNStub; //Name Node stub
-    protected IDataNode DNStub; //Data Node stub
+    public INameNode NNStub; //Name Node stub
+    public IDataNode DNStub; //Data Node stub
     public Client()
     {
         //Constructor
@@ -114,7 +114,7 @@ public class Client
 
     public void PutFile(String Filename) //Would like to try this
     {
-        System.out.println("Going to put a file");
+        System.out.println("Going to put file" + Filename);
         File File = new File(Filename);
         BufferedInputStream bis;
         try{
