@@ -106,7 +106,7 @@ public class NameNode implements INameNode{
 					
 			response.setStatus(-1); //set fail as default
 			
-			int random = (int)(Math.random() * 10000) + 1; //get random chunk number
+			int random = (int)((Math.random() * 10000) + 1); //get random chunk number
 			while(findInFilelist(random)) //chunk is unique
 			{
 				random++;
@@ -303,12 +303,14 @@ public class NameNode implements INameNode{
 			this.printMsg("Write Block Request from client");
 			String fname = new String();
 			int fileindex = -1;
+			int filehandle = -1;
 			for(int i=0;i<filelist.size();i++)
 			{
 				if(deserObj.getHandle() == filelist.get(i).filehandle)
 				{
 					fileindex = i;
 					fname = filelist.get(i).filename;
+					filehandle = filelist.get(i).filehandle;
 				}
 			}
 			
@@ -326,7 +328,7 @@ public class NameNode implements INameNode{
 			}
 			BlockLocations.Builder blockobj = BlockLocations.newBuilder().setBlockNumber(random);
 			
-			this.printMsg("Creating Assigning chunk number " + Integer.toString(random) + " filename " + fname + " for filehandle " + Integer.toString(fileindex));
+			this.printMsg("Creating Assigning chunk number " + Integer.toString(random) + " filename " + fname + " for filehandle " + Integer.toString(filehandle) + " indexed at " + Integer.toString(fileindex));
 			
 			//Record file to chunk relation now. Write to filetochunklist.txt when closing file
 			filelist.get(fileindex).Chunks.add(random);
