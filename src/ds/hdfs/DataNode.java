@@ -153,6 +153,7 @@ public class DataNode implements IDataNode
             response.addData(ByteString.copyFrom(line.getBytes()));
             br.close();
             
+            response.setStatus(1);
             /*
             String line = null;
             while ((line = br.readLine()) != null) 
