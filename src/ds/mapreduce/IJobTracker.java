@@ -1,6 +1,7 @@
 package ds.mapreduce;
-import java.rmi.Remote;
+
 import java.rmi.RemoteException;
+import java.rmi.Remote;
 
 public interface IJobTracker extends Remote{
 	
