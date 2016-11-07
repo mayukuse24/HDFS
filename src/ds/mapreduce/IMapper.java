@@ -1,3 +1,5 @@
+package ds.mapreduce;
+
 public interface IMapper {
-	public String map(String);
+	public String map(String inp);
 }
