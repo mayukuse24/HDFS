@@ -40,7 +40,7 @@ public class TaskTracker
         this.MyID = id;
         this.MapThreads = mapthreads;
         this.ReduceThreads = reducethreads;
-        
+
         //Defining Individual threadpools
         this.MapPool = Executors.newFixedThreadPool(this.MapThreads);
         this.ReducePool = Executors.newFixedThreadPool(this.ReduceThreads);
@@ -83,19 +83,19 @@ public class TaskTracker
         String Config = Client.FileTail("TT_details.txt");
         String[] SC = Config.split(";");
         TaskTracker TT = new TaskTracker(Integer.parseInt(SC[0]), Integer.parseInt(SC[1]), Integer.parseInt(SC[2]));
-    
+
         /*
-        MapperFunc callmap = new MapperFunc();
-        ReducerFunc callreduce = new ReducerFunc();
-        Future<Integer> future = TT.MapPool.submit(callmap);
+           MapperFunc callmap = new MapperFunc();
+           ReducerFunc callreduce = new ReducerFunc();
+           Future<Integer> future = TT.MapPool.submit(callmap);
 
-        System.out.println("Active MapTasks = " + ((ThreadPoolExecutor)TT.MapPool).getActiveCount());
-        Future<Integer> f = TT.ReducePool.submit(callreduce);
-        System.out.println("Active ReduceTasks = " + TT.ReducePool);
+           System.out.println("Active MapTasks = " + ((ThreadPoolExecutor)TT.MapPool).getActiveCount());
+           Future<Integer> f = TT.ReducePool.submit(callreduce);
+           System.out.println("Active ReduceTasks = " + TT.ReducePool);
 
-        ((ThreadPoolExecutor)TT.MapPool).shutdown();
-        ((ThreadPoolExecutor)TT.ReducePool).shutdown();
-        */
+           ((ThreadPoolExecutor)TT.MapPool).shutdown();
+           ((ThreadPoolExecutor)TT.ReducePool).shutdown();
+           */
 
         String Config_JT = Client.FileTail("jt_details.txt");
         String[] Sc = Config_JT.split(";");
@@ -123,7 +123,7 @@ public class TaskTracker
                 MPS.setMapOutputFile(TT.MapTasksList.get(i).OutputFile);
                 HBR.addMapStatus(MPS.build());
             }
-                
+
             for(int i=0; i<TT.ReduceTasksList.size(); i++)
             {
                 ReduceTaskStatus.Builder RPS = ReduceTaskStatus.newBuilder();
@@ -143,6 +143,7 @@ public class TaskTracker
                 else
                     i++;
             }
+
             for(int i=0; i<TT.MapTasksList.size();)
             {
                 if(TT.MapTasksList.get(i).TaskComplete == true)
@@ -160,7 +161,7 @@ public class TaskTracker
                 System.out.println("Unable to send HeartBeat to the JT");
                 return;
             }
-            
+
             maprformat.HeartBeatResponse HeartBeatResp;
             try{
                 HeartBeatResp = maprformat.HeartBeatResponse.parseFrom(R);
@@ -226,6 +227,7 @@ class Maptasks
     {
     }
 }
+
 class Reducetasks
 {
     public int JobID;
@@ -286,15 +288,28 @@ class MapperFunc implements Callable<Integer>
         URLClassLoader cl = URLClassLoader.newInstance(urls);
         Class<?> c = cl.loadClass(MT.MapName);
 
+        //Get the regex from REGEX.txt file 
+        String Regex = Client.FileTail("REGEX.txt");
         //Send the Lines of the block to the Jar and write the output to the Outputfile
-        for(ByteString A : BlockResp.getDataList())
-        {
-            String S = A.toStringUtf8();
-            String Result = c.getMethod("map", String.class).invoke(c.newInstance(), S).toString();
+        try{
+            FileOutputStream fos = new FileOutputStream(this.MT.OutputFile, true);
+            for(ByteString A : BlockResp.getDataList())
+            {
+                String S = A.toStringUtf8();
+                String Result = c.getMethod("map", String.class).invoke(c.newInstance(), S, Regex).toString();
+                fos.write(Result.getBytes());
+            }
+            fos.close();
+        }catch(Exception e){
+            System.out.println("IOError while writing to the file in MapperFunc");
+            return -1;
         }
+        //Now to write this file back to the hdfs
+        TTC.PutFile(this.MT.OutputFile);
         return 1;
     }
 }
+
 class ReducerFunc implements Callable<Integer> 
 {
     ReducerFunc()
