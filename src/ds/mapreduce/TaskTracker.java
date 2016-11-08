@@ -254,7 +254,7 @@ class MapperFunc implements Callable<Integer>
         //Get file from HDFS
         Client TTC = new Client();
         TTC.DNStub = TTC.GetDNStub(MT.DNName, MT.DNIP, MT.DNPort); //Name, IP, Port
-        ReadBlockRequest.Builder ReadBlockReq = ReadBlockRequest.newbuilder();
+        ReadBlockRequest.Builder ReadBlockReq = ReadBlockRequest.newBuilder();
 
         //Get Jar
         String PathToJar = Paths.get("").toAbsolutePath().toString() + "/jarnewtest.jar";
