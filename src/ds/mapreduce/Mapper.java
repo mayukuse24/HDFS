@@ -1,11 +1,16 @@
 package ds.mapreduce;
 
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
+
 public class Mapper implements IMapper{
 	
-	public String map(String inpdata)
+	public String map(String inpdata,String expr)
 	{
-		if(inpdata.matches("")) //TODO:put expressions here
-			return "<"+inpdata+","+"true>";
+		Pattern p = Pattern.compile(expr);
+	    Matcher m = p.matcher(inpdata);
+	    if (m.find())
+	    	return inpdata;
 		else
 			return "";
 	}

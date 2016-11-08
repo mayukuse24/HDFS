@@ -9,6 +9,7 @@ import java.net.*;
 import java.util.*;
 import java.util.concurrent.*;
 import java.io.*;
+import java.lang.reflect.InvocationTargetException;
 import java.nio.charset.Charset;
 import java.nio.file.Path;
 import java.nio.file.Paths;
@@ -249,7 +250,7 @@ class MapperFunc implements Callable<Integer>
         this.MT = inp;
     }
     //This is the function which will be called everytime MapperFunc is called
-    public Integer call() throws IOException, ClassNotFoundException
+    public Integer call() throws IOException, ClassNotFoundException, IllegalAccessException, IllegalArgumentException, InvocationTargetException, NoSuchMethodException, SecurityException, InstantiationException
     {
         //Get file from HDFS
         Client TTC = new Client();
@@ -289,7 +290,7 @@ class MapperFunc implements Callable<Integer>
         for(ByteString A : BlockResp.getDataList())
         {
             String S = A.toStringUtf8();
-            String Result = c.getMethod("map", String.class).invoke(c.newInstance(), S);
+            String Result = c.getMethod("map", String.class).invoke(c.newInstance(), S).toString();
         }
         return 1;
     }
