@@ -93,7 +93,8 @@ public class TaskTracker
         MapperFunc callmap = new MapperFunc();
         ReducerFunc callreduce = new ReducerFunc();
         Future<Integer> future = TT.MapPool.submit(callmap);
-        System.out.println("Active MapTasks = " + TT.MapPool);
+        
+        System.out.println("Active MapTasks = " + ((ThreadPoolExecutor)TT.MapPool).getActiveCount());
         Future<Integer> f = TT.ReducePool.submit(callreduce);
         System.out.println("Active ReduceTasks = " + TT.ReducePool);
 
