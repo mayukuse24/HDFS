@@ -108,7 +108,7 @@ public class TaskTracker
         //Send Heartbeat to the JT
         while(true)
         {
-            HeartBeatRequest.Builder HBR = HeartBeatRequest.newBuilder();
+            maprformat.HeartBeatRequest.Builder HBR = maprformat.HeartBeatRequest.newBuilder();
             HBR.setTaskTrackerId(TT.MyID);
             HBR.setNumMapSlotsFree(TT.MapThreads - ((ThreadPoolExecutor)TT.MapPool).getActiveCount());
             HBR.setNumReduceSlotsFree(TT.ReduceThreads - ((ThreadPoolExecutor)TT.ReducePool).getActiveCount());
@@ -160,9 +160,9 @@ public class TaskTracker
                 return;
             }
             
-            HeartBeatResponse HeartBeatResp;
+            maprformat.HeartBeatResponse HeartBeatResp;
             try{
-                HeartBeatResp = HeartBeatResponse.parseFrom(R);
+                HeartBeatResp = maprformat.HeartBeatResponse.parseFrom(R);
             }catch(Exception e){
                 System.out.println("There is some problem while decoding the HeartBeatResponse in proto");
                 return;
