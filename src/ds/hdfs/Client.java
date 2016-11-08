@@ -52,7 +52,7 @@ public class Client
         }
     }
 
-    public String FileTail(String f)
+    public static String FileTail(String f)
     {
         File file = null;
         file = new File(f);
