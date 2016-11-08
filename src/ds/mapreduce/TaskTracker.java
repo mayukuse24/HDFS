@@ -255,6 +255,28 @@ class MapperFunc implements Callable<Integer>
         Client TTC = new Client();
         TTC.DNStub = TTC.GetDNStub(MT.DNName, MT.DNIP, MT.DNPort); //Name, IP, Port
         ReadBlockRequest.Builder ReadBlockReq = ReadBlockRequest.newBuilder();
+        ReadBlockReq.setBlockNumber(MT.BlockNo);
+        byte[] Res;
+        try{
+            System.out.println("Waiting for the DNStub ReadBlockRequest response");
+            Res = TTC.DNStub.readBlock(ReadBlockReq.build().toByteArray());
+            System.out.println("Got the DNStub ReadBlockRequest response");
+        }catch(Exception e){
+            System.out.println("Unable to send ReadBLock request from MapperFunc to DN");
+            return -1;
+        }
+        ReadBlockResponse BlockResp;
+        try{
+            BlockResp = ReadBlockResponse.parseFrom(Res);
+        }catch(Exception e){
+            System.out.println("Unable to decode the ReadBlockResponse proto in MapperFunc");
+            return -1;
+        }
+        if(BlockResp.getStatus() < 0)
+        {
+            System.out.println("Huston We have ReadBlockResponse Status = " + BlockResp.getStatus());
+            return -1;
+        }
 
         //Get Jar
         String PathToJar = Paths.get("").toAbsolutePath().toString() + "/jarnewtest.jar";
@@ -263,6 +285,12 @@ class MapperFunc implements Callable<Integer>
         URLClassLoader cl = URLClassLoader.newInstance(urls);
         Class<?> c = cl.loadClass(MT.MapName);
 
+        //Send the Lines of the block to the Jar and write the output to the Outputfile
+        for(ByteString A : BlockResp.getDataList())
+        {
+            String S = A.toStringUtf8();
+            String Result = c.getMethod("map", String.class).invoke(c.newInstance(), S);
+        }
         return 1;
     }
 }
