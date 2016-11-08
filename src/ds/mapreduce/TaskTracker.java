@@ -5,23 +5,18 @@ import java.rmi.registry.LocateRegistry;
 import java.rmi.RemoteException;
 import java.rmi.server.UnicastRemoteObject;
 import java.rmi.*;
+import java.net.*;
 import java.util.*;
 import java.util.concurrent.*;
-/*
-   import java.util.concurrent.Callable;
-   import java.util.concurrent.ExecutorService;
-   import java.util.concurrent.Executors;
-   import java.util.concurrent.Future;
-   import java.util.concurrent.TimeUnit;
-   import java.util.concurrent.ThreadPoolExecutor;
-   import java.util.concurrent.LinkedBlockingQueue;
-   import java.util.concurrent.TimeUnit;
-   */
-
 import java.io.*;
 import java.nio.charset.Charset;
+import java.nio.file.Path;
+import java.nio.file.Paths;
+import java.util.jar.JarEntry;
+import java.util.jar.JarFile;
 
 import ds.mapreduce.maprformat.*;
+import ds.hdfs.hdfsformat.*;
 import com.google.protobuf.ByteString; 
 import com.google.protobuf.InvalidProtocolBufferException;
 import ds.hdfs.Client;
@@ -36,19 +31,18 @@ public class TaskTracker
     protected INameNode NNStub;
     final protected ExecutorService MapPool;
     final protected ExecutorService ReducePool;
-    protected Future<Integer>[] MapFuture;
-    protected Future[] ReduceFuture;
+    protected List<Maptasks> MapTasksList = new ArrayList<Maptasks>();
+    protected List<Reducetasks> ReduceTasksList = new ArrayList<Reducetasks>();
 
     public TaskTracker(int id, int mapthreads, int reducethreads)
     {
         this.MyID = id;
         this.MapThreads = mapthreads;
         this.ReduceThreads = reducethreads;
+        
         //Defining Individual threadpools
         this.MapPool = Executors.newFixedThreadPool(this.MapThreads);
         this.ReducePool = Executors.newFixedThreadPool(this.ReduceThreads);
-        //MapFuture = new Future<Integer>[this.MapThreads];
-        //ReduceFuture = new Future[this.ReduceThreads];
     }
 
     public IJobTracker GetJTStub(String Name, String IP, int Port)
@@ -88,17 +82,20 @@ public class TaskTracker
         String Config = Client.FileTail("TT_details.txt");
         String[] SC = Config.split(";");
         TaskTracker TT = new TaskTracker(Integer.parseInt(SC[0]), Integer.parseInt(SC[1]), Integer.parseInt(SC[2]));
-
     
+        /*
         MapperFunc callmap = new MapperFunc();
         ReducerFunc callreduce = new ReducerFunc();
         Future<Integer> future = TT.MapPool.submit(callmap);
-        
+
         System.out.println("Active MapTasks = " + ((ThreadPoolExecutor)TT.MapPool).getActiveCount());
         Future<Integer> f = TT.ReducePool.submit(callreduce);
         System.out.println("Active ReduceTasks = " + TT.ReducePool);
 
-        /*
+        ((ThreadPoolExecutor)TT.MapPool).shutdown();
+        ((ThreadPoolExecutor)TT.ReducePool).shutdown();
+        */
+
         String Config_JT = Client.FileTail("jt_details.txt");
         String[] Sc = Config_JT.split(";");
         TT.JTStub = TT.GetJTStub(Sc[0], Sc[1], Integer.parseInt(Sc[2])); //Name, IP, Port
@@ -113,8 +110,93 @@ public class TaskTracker
         {
             HeartBeatRequest.Builder HBR = HeartBeatRequest.newBuilder();
             HBR.setTaskTrackerId(TT.MyID);
-            HBR.setNumMapSlotsFree(); //Fill her up
-            HBR.setNumReduceSlotsFree(); //Fill her up
+            HBR.setNumMapSlotsFree(TT.MapThreads - ((ThreadPoolExecutor)TT.MapPool).getActiveCount());
+            HBR.setNumReduceSlotsFree(TT.ReduceThreads - ((ThreadPoolExecutor)TT.ReducePool).getActiveCount());
+
+            for(int i=0; i<TT.MapTasksList.size(); i++)
+            {
+                MapTaskStatus.Builder MPS = MapTaskStatus.newBuilder();
+                MPS.setJobId(TT.MapTasksList.get(i).JobID);
+                MPS.setTaskId(TT.MapTasksList.get(i).TaskID);
+                MPS.setTaskCompleted(TT.MapTasksList.get(i).TaskComplete);
+                MPS.setMapOutputFile(TT.MapTasksList.get(i).OutputFile);
+                HBR.addMapStatus(MPS.build());
+            }
+                
+            for(int i=0; i<TT.ReduceTasksList.size(); i++)
+            {
+                ReduceTaskStatus.Builder RPS = ReduceTaskStatus.newBuilder();
+                RPS.setJobId(TT.ReduceTasksList.get(i).JobID);
+                RPS.setTaskId(TT.ReduceTasksList.get(i).TaskID);
+                RPS.setTaskCompleted(TT.ReduceTasksList.get(i).TaskComplete);
+                HBR.addReduceStatus(RPS.build());
+            }
+
+            //Remove done elements from ReduceTaskList and MapTasksList
+            for(int i=0; i<TT.ReduceTasksList.size();)
+            {
+                if(TT.ReduceTasksList.get(i).TaskComplete == true)
+                {
+                    TT.ReduceTasksList.remove(i);
+                }
+                else
+                    i++;
+            }
+            for(int i=0; i<TT.MapTasksList.size();)
+            {
+                if(TT.MapTasksList.get(i).TaskComplete == true)
+                {
+                    TT.MapTasksList.remove(i);
+                }
+                else
+                    i++;
+            }
+
+            byte[] R;
+            try{
+                R = TT.JTStub.heartBeat(HBR.build().toByteArray());
+            }catch(Exception e){
+                System.out.println("Unable to send HeartBeat to the JT");
+                return;
+            }
+            
+            HeartBeatResponse HeartBeatResp;
+            try{
+                HeartBeatResp = HeartBeatResponse.parseFrom(R);
+            }catch(Exception e){
+                System.out.println("There is some problem while decoding the HeartBeatResponse in proto");
+                return;
+            }
+            if(HeartBeatResp.getStatus() < 0)
+            {
+                System.out.println("Huston, We have HeartBeatResponse Status = " + HeartBeatResp.getStatus());
+                return;
+            }
+            for(int i=0; i<HeartBeatResp.getMapTasksCount(); i++)
+            {
+                Maptasks MT = new Maptasks();
+                MT.TaskComplete = false;
+                MT.JobID = HeartBeatResp.getMapTasks(i).getJobId();
+                MT.TaskID = HeartBeatResp.getMapTasks(i).getTaskId();
+                MT.OutputFile = "job_" + Integer.toString(MT.JobID) + "_map_" + Integer.toString(MT.TaskID);
+                MT.MapName = HeartBeatResp.getMapTasks(i).getMapName();
+                MT.BlockNo = HeartBeatResp.getMapTasks(i).getInputBlocks(0).getBlockNumber();
+                MT.DNName = HeartBeatResp.getMapTasks(i).getInputBlocks(0).getLocations(0).getName();
+                MT.DNPort = HeartBeatResp.getMapTasks(i).getInputBlocks(0).getLocations(0).getPort();
+                MT.DNIP = HeartBeatResp.getMapTasks(i).getInputBlocks(0).getLocations(0).getIp();
+                MapperFunc CallMap = new MapperFunc(MT);
+                MT.future = TT.MapPool.submit(CallMap);
+                TT.MapTasksList.add(MT);
+            }
+
+            for(int i=0; i<HeartBeatResp.getReduceTasksCount(); i++)
+            {
+                //Spawn the Reduce Tasks
+                Reducetasks RT = new Reducetasks();
+                RT.TaskComplete = false;
+                RT.JobID = HeartBeatResp.getReduceTasks(i).getJobId();
+                RT.TaskID = HeartBeatResp.getReduceTasks(i).getTaskId();
+            }
 
             //Wait for 1 sec
             try{
@@ -122,35 +204,68 @@ public class TaskTracker
             }catch(Exception e){
                 System.out.println("Unexpected Interrupt Exception while waiting for BlockReport");
             }
-
         }
-        */
+    }
+}
+class Maptasks
+{
+    public int JobID;
+    public int TaskID;
+    public boolean TaskComplete;
+    public String OutputFile;
+    public String MapName;
+    public Future <Integer> future;
 
+    public int BlockNo;
+    public String DNName;
+    public int DNPort;
+    public String DNIP;
+
+    public Maptasks()
+    {
+    }
+}
+class Reducetasks
+{
+    public int JobID;
+    public int TaskID;
+    public boolean TaskComplete;
+    public Future <Integer> future;
+
+    public Reducetasks()
+    {
     }
 }
 
 //This function will load the mapper function from the jar; perform it -
 //And write it to a file job_<jobid>_map_<taskid>
-class MapperFunc implements Callable<Integer> 
+//STILL TO BE COMPLETED
+class MapperFunc implements Callable<Integer>
 {
-    MapperFunc()
+    Maptasks MT;
+    MapperFunc(Maptasks inp)
     {
         //Initializer with the needed inputs
+        this.MT = inp;
     }
-
     //This is the function which will be called everytime MapperFunc is called
-    public Integer call()
+    public Integer call() throws IOException, ClassNotFoundException
     {
-        System.out.println("MapperFunc");
-        try{
-            TimeUnit.SECONDS.sleep(15); //Wait for 15 Seconds
-        }catch(Exception e){
-            System.out.println("Unexpected Interrupt Exception while waiting for BlockReport");
-        }
+        //Get file from HDFS
+        Client TTC = new Client();
+        TTC.DNStub = TTC.GetDNStub(MT.DNName, MT.DNIP, MT.DNPort); //Name, IP, Port
+        ReadBlockRequest.Builder ReadBlockReq = ReadBlockRequest.newbuilder();
+
+        //Get Jar
+        String PathToJar = Paths.get("").toAbsolutePath().toString() + "/jarnewtest.jar";
+        JarFile jarfile = new JarFile(PathToJar);
+        URL[] urls = { new URL("jar:file:" + PathToJar + "!/")};
+        URLClassLoader cl = URLClassLoader.newInstance(urls);
+        Class<?> c = cl.loadClass(MT.MapName);
+
         return 1;
     }
 }
-
 class ReducerFunc implements Callable<Integer> 
 {
     ReducerFunc()
@@ -163,7 +278,7 @@ class ReducerFunc implements Callable<Integer>
     {
         System.out.println("ReducerFunction");
         try{
-            TimeUnit.SECONDS.sleep(15); //Wait for 15 Seconds
+            TimeUnit.SECONDS.sleep(1); //Wait for 15 Seconds
         }catch(Exception e){
             System.out.println("Unexpected Interrupt Exception while waiting for BlockReport");
         }
