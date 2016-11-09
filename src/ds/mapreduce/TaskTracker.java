@@ -176,6 +176,7 @@ public class TaskTracker
                 MapperFunc CallMap = new MapperFunc(MT);
                 MT.future = TT.MapPool.submit(CallMap);
                 TT.MapTasksList.add(MT);
+               // TT.MapTasksList.get((TT.MapTasksList.size()-1)).future.isDone();
             }
 
             for(int i=0; i<HeartBeatResp.getReduceTasksCount(); i++)
