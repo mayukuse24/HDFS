@@ -55,15 +55,19 @@ public class JobClient
         }
         JobClient JC = new JobClient(args[0], args[1], args[2], args[3], Integer.parseInt(args[4]));
         Client HC = new Client();
+        //NOTNEEDED ANYMORE
         //This is to get the NN for the client
+        /*
         String Config = HC.FileTail("nn_details.txt");
         String[] Split_Config = Config.split(";");
         HC.NNStub = HC.GetNNStub(Split_Config[0], Split_Config[1], Integer.parseInt(Split_Config[2]));
         System.out.println("Got NNStub from the hdfs");
+        */
+        HC.PutFile("REGEX.txt"); //Put the regex file in the HDFS
         HC.PutFile(JC.InputFile); //Put the inputfile in HDFS
+        
 
-
-        String Config_JT = HC.FileTail("jt_details.txt");
+        String Config_JT = Client.FileTail("jt_details.txt");
         String[] SC = Config_JT.split(";");
         JC.JTStub = JC.GetJTStub(SC[0], SC[1], Integer.parseInt(SC[2])); //Name, IP, Port
 

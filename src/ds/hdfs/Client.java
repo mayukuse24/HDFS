@@ -26,6 +26,7 @@ public class Client
         String Config = Client.FileTail("nn_details.txt");
         String[] Split_Config = Config.split(";");
         this.NNStub = this.GetNNStub(Split_Config[0], Split_Config[1], Integer.parseInt(Split_Config[2]));
+        System.out.println("Got NameNode stub");
     }
 
     public IDataNode GetDNStub(String Name, String IP, int Port)
