@@ -78,7 +78,7 @@ public class TaskTracker
         }
     }
 
-    public static void main(String[] args)
+    public static void main(String[] args) throws InterruptedException, ExecutionException
     {
         String Config = Client.FileTail("TT_details.txt");
         String[] SC = Config.split(";");
@@ -108,7 +108,12 @@ public class TaskTracker
                 if(TT.MapTasksList.get(i).future.isDone())
                 {
                     //Make TaskComplete value true
-                    TT.MapTasksList.get(i).TaskComplete = true;
+                    if(TT.MapTasksList.get(i).future.get() < 0)
+                    {
+                        System.out.println("Huston we have Future return value -1 in MapTask no: " +  i);
+                    }
+                    else
+                        TT.MapTasksList.get(i).TaskComplete = true;
                 }
             }
             //To update the TaskComplete variables in the TT.ReduceTasksList
@@ -116,7 +121,12 @@ public class TaskTracker
             {
                 if(TT.ReduceTasksList.get(i).future.isDone())
                 {
-                    TT.ReduceTasksList.get(i).TaskComplete = true;
+                    if(TT.ReduceTasksList.get(i).future.get() < 0)
+                    {
+                        System.out.println("Huston we have Future return value -1 in ReduceTask no: " +  i);
+                    }
+                    else
+                        TT.ReduceTasksList.get(i).TaskComplete = true;
                 }
             }
 
@@ -266,7 +276,7 @@ class MapperFunc implements Callable<Integer>
     //This is the function which will be called everytime MapperFunc is called
     public Integer call() throws IOException, ClassNotFoundException, IllegalAccessException, IllegalArgumentException, InvocationTargetException, NoSuchMethodException, SecurityException, InstantiationException
     {
-        //Get file from HDFS
+        //Get Block from HDFS
         Client TTC = new Client();
         TTC.DNStub = TTC.GetDNStub(MT.DNName, MT.DNIP, MT.DNPort); //Name, IP, Port
         ReadBlockRequest.Builder ReadBlockReq = ReadBlockRequest.newBuilder();
@@ -294,7 +304,7 @@ class MapperFunc implements Callable<Integer>
         }
 
         //Get Jar
-        String PathToJar = Paths.get("").toAbsolutePath().toString() + "/jarnewtest.jar";
+        String PathToJar = Paths.get(".").toAbsolutePath().toString() + "/jarnewtest.jar";
         JarFile jarfile = new JarFile(PathToJar);
         URL[] urls = { new URL("jar:file:" + PathToJar + "!/")};
         URLClassLoader cl = URLClassLoader.newInstance(urls);
