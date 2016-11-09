@@ -301,6 +301,7 @@ class MapperFunc implements Callable<Integer>
         Class<?> c = cl.loadClass(MT.MapName);
 
         //Get the regex from REGEX.txt file 
+        TTC.GetFile("REGEX.txt"); //Get file from the hdfs
         String Regex = Client.FileTail("REGEX.txt");
         //Send the Lines of the block to the Jar and write the output to the Outputfile
         try{
