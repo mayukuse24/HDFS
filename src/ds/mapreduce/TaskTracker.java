@@ -101,6 +101,25 @@ public class TaskTracker
             HBR.setNumMapSlotsFree(TT.MapThreads - ((ThreadPoolExecutor)TT.MapPool).getActiveCount());
             HBR.setNumReduceSlotsFree(TT.ReduceThreads - ((ThreadPoolExecutor)TT.ReducePool).getActiveCount());
 
+            //To update the TaskComplete variables in the TT.MapTasksList
+            for(int i=0; i<TT.MapTasksList.size(); i++)
+            {
+                //TT.MapTasksList.get((TT.MapTasksList.size()-1)).future.isDone();
+                if(TT.MapTasksList.get(i).future.isDone())
+                {
+                    //Make TaskComplete value true
+                    TT.MapTasksList.get(i).TaskComplete = true;
+                }
+            }
+            //To update the TaskComplete variables in the TT.ReduceTasksList
+            for(int i=0; i<TT.ReduceTasksList.size(); i++)
+            {
+                if(TT.ReduceTasksList.get(i).future.isDone())
+                {
+                    TT.ReduceTasksList.get(i).TaskComplete = true;
+                }
+            }
+
             for(int i=0; i<TT.MapTasksList.size(); i++)
             {
                 MapTaskStatus.Builder MPS = MapTaskStatus.newBuilder();
@@ -130,7 +149,6 @@ public class TaskTracker
                 else
                     i++;
             }
-
             for(int i=0; i<TT.MapTasksList.size();)
             {
                 if(TT.MapTasksList.get(i).TaskComplete == true)
@@ -141,6 +159,7 @@ public class TaskTracker
                     i++;
             }
 
+            //Send the HeartBeat TO the JobTracker and get HeartBeatResp
             byte[] R;
             try{
                 R = TT.JTStub.heartBeat(HBR.build().toByteArray());
@@ -148,7 +167,6 @@ public class TaskTracker
                 System.out.println("Unable to send HeartBeat to the JT");
                 return;
             }
-
             maprformat.HeartBeatResponse HeartBeatResp;
             try{
                 HeartBeatResp = maprformat.HeartBeatResponse.parseFrom(R);
@@ -161,6 +179,8 @@ public class TaskTracker
                 System.out.println("Huston, We have HeartBeatResponse Status = " + HeartBeatResp.getStatus());
                 return;
             }
+
+            //Spawn The MapTasks given by JT
             for(int i=0; i<HeartBeatResp.getMapTasksCount(); i++)
             {
                 Maptasks MT = new Maptasks();
@@ -176,9 +196,7 @@ public class TaskTracker
                 MapperFunc CallMap = new MapperFunc(MT);
                 MT.future = TT.MapPool.submit(CallMap);
                 TT.MapTasksList.add(MT);
-               // TT.MapTasksList.get((TT.MapTasksList.size()-1)).future.isDone();
             }
-
             for(int i=0; i<HeartBeatResp.getReduceTasksCount(); i++)
             {
                 //Spawn the Reduce Tasks
@@ -186,6 +204,13 @@ public class TaskTracker
                 RT.TaskComplete = false;
                 RT.JobID = HeartBeatResp.getReduceTasks(i).getJobId();
                 RT.TaskID = HeartBeatResp.getReduceTasks(i).getTaskId();
+                RT.ReducerName = HeartBeatResp.getReduceTasks(i).getReducerName();
+                for(int j=0; j<HeartBeatResp.getReduceTasks(i).getMapOutputFilesCount(); j++)
+                    RT.MapOutFiles.add(HeartBeatResp.getReduceTasks(i).getMapOutputFiles(j));
+                RT.OutputFile = HeartBeatResp.getReduceTasks(i).getOutputFile();
+                ReducerFunc CallReduce = new ReducerFunc(RT);
+                RT.future = TT.ReducePool.submit(CallReduce);
+                TT.ReduceTasksList.add(RT);
             }
 
             //Wait for 1 sec
@@ -212,26 +237,24 @@ class Maptasks
     public int DNPort;
     public String DNIP;
 
-    public Maptasks()
-    {
-    }
+    public Maptasks(){}
 }
 
 class Reducetasks
 {
     public int JobID;
     public int TaskID;
+    public String ReducerName;
+    public List<String> MapOutFiles = new ArrayList<String>();
+    public String OutputFile;
     public boolean TaskComplete;
     public Future <Integer> future;
 
-    public Reducetasks()
-    {
-    }
+    public Reducetasks(){}
 }
 
 //This function will load the mapper function from the jar; perform it -
 //And write it to a file job_<jobid>_map_<taskid>
-//STILL TO BE COMPLETED
 class MapperFunc implements Callable<Integer>
 {
     Maptasks MT;
@@ -295,26 +318,55 @@ class MapperFunc implements Callable<Integer>
         }
         //Now to write this file back to the hdfs
         TTC.PutFile(this.MT.OutputFile);
+
+        //Delete the local file
+        File f = null;
+        boolean bool = false;
+        try{
+            // create new file
+            f = new File(this.MT.OutputFile);
+            bool = f.delete();
+        }catch(Exception e){
+            System.out.println("Unable to delete the local output file");
+            return -1;
+        }
         return 1;
     }
 }
 
 class ReducerFunc implements Callable<Integer> 
 {
-    ReducerFunc()
+    Reducetasks RT;
+    ReducerFunc(Reducetasks rt)
     {
         //Initializer with the needed inputs
+        this.RT = rt;
     }
 
     //This is the function which will be called everytime ReducerFunc is called
-    public Integer call()
+    public Integer call() throws FileNotFoundException, IOException
     {
-        System.out.println("ReducerFunction");
-        try{
-            TimeUnit.SECONDS.sleep(1); //Wait for 15 Seconds
-        }catch(Exception e){
-            System.out.println("Unexpected Interrupt Exception while waiting for BlockReport");
+        Client TTC = new Client();
+        //Get all the files from the HDFS
+        for(int i=0; i<this.RT.MapOutFiles.size(); i++) 
+        {
+            TTC.GetFile(RT.MapOutFiles.get(i));
         }
+
+        FileOutputStream out = new FileOutputStream(this.RT.OutputFile);
+        for (int i=0; i<this.RT.MapOutFiles.size(); i++) 
+        {
+            FileInputStream in = new FileInputStream(this.RT.MapOutFiles.get(i));
+            int b = 0;
+            while ((b = in.read()) >= 0)
+            {
+                out.write(b);
+                out.flush();
+            }
+            in.close();
+        }
+        out.close();
+        TTC.PutFile(this.RT.OutputFile);
         return 1;
     }
 }
