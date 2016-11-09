@@ -84,19 +84,6 @@ public class TaskTracker
         String[] SC = Config.split(";");
         TaskTracker TT = new TaskTracker(Integer.parseInt(SC[0]), Integer.parseInt(SC[1]), Integer.parseInt(SC[2]));
 
-        /*
-           MapperFunc callmap = new MapperFunc();
-           ReducerFunc callreduce = new ReducerFunc();
-           Future<Integer> future = TT.MapPool.submit(callmap);
-
-           System.out.println("Active MapTasks = " + ((ThreadPoolExecutor)TT.MapPool).getActiveCount());
-           Future<Integer> f = TT.ReducePool.submit(callreduce);
-           System.out.println("Active ReduceTasks = " + TT.ReducePool);
-
-           ((ThreadPoolExecutor)TT.MapPool).shutdown();
-           ((ThreadPoolExecutor)TT.ReducePool).shutdown();
-           */
-
         String Config_JT = Client.FileTail("jt_details.txt");
         String[] Sc = Config_JT.split(";");
         TT.JTStub = TT.GetJTStub(Sc[0], Sc[1], Integer.parseInt(Sc[2])); //Name, IP, Port
@@ -209,6 +196,7 @@ public class TaskTracker
         }
     }
 }
+
 class Maptasks
 {
     public int JobID;
