@@ -12,6 +12,9 @@ import java.net.URI;
 import java.net.URL;
 import java.net.URLClassLoader;
 import java.rmi.RemoteException;
+import java.rmi.registry.LocateRegistry;
+import java.rmi.registry.Registry;
+import java.rmi.server.UnicastRemoteObject;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.Enumeration;
@@ -34,6 +37,8 @@ import ds.mapreduce.maprformat.ReducerTaskInfo;
 import ds.hdfs.hdfsformat.BlockLocationRequest;
 import ds.hdfs.hdfsformat.BlockLocationResponse;
 import ds.hdfs.hdfsformat.BlockLocations;
+import ds.hdfs.hdfsformat.CloseFileRequest;
+import ds.hdfs.hdfsformat.CloseFileResponse;
 import ds.hdfs.hdfsformat.HeartBeatResponse;
 import ds.hdfs.hdfsformat.OpenFileRequest;
 import ds.hdfs.hdfsformat.OpenFileResponse;
@@ -45,6 +50,7 @@ public class JobTracker implements IJobTracker{
 	Client hdfsclient;
 	String ip,name;
 	int port;
+	protected Registry serverRegistry;
 	
 	public JobTracker(String addr,int p, String nn)
 	{
@@ -61,6 +67,7 @@ public class JobTracker implements IJobTracker{
 		int inputfilehandle; //TODO:required to close hdfs file in end
 		String mapName,reducerName,inputFile,outputFile;
 		boolean reduceStage;
+		ArrayList<Integer> maptasklist;
 		public Job(int id,int nummt,int numrt,String mname,String rname,String infile,String outfile,int fhandle)
 		{
 			jid = id;
@@ -73,6 +80,7 @@ public class JobTracker implements IJobTracker{
 			inputfilehandle = fhandle;
 			reduceStage = false;
 			completedreducetasks = completedmaptasks = 0;
+			maptasklist = new ArrayList<Integer>();
 		}
 	}
 	
@@ -178,11 +186,13 @@ public class JobTracker implements IJobTracker{
 					.openFile(openfilerequest.toByteArray()));
 			
 			BlockLocationRequest.Builder blocrequest = BlockLocationRequest.newBuilder();
-			//find DNs of chunks
+			//add chunks to blockrequest for DN
 			for(int i=0;i<openfileresponse.getBlockNumsCount();i++)
 			{
 				blocrequest.addBlockNums(openfileresponse.getBlockNums(i));
 			}
+			
+			//get DNs for chunks
 			BlockLocationResponse blocresponse = BlockLocationResponse.parseFrom(this.hdfsclient.NNStub
 					.getBlockLocations(blocrequest.build().toByteArray()));
 			
@@ -212,6 +222,10 @@ public class JobTracker implements IJobTracker{
 				}
 				maptaskqueue.add(newmaptask);
 			}
+			
+			//Close hdfs file opened to read chunk nos
+			CloseFileRequest closefilerequest = CloseFileRequest.newBuilder().setHandle(openfileresponse.getHandle()).build();
+			CloseFileResponse closefileresponse = CloseFileResponse.parseFrom(this.hdfsclient.NNStub.closeFile(closefilerequest.toByteArray()));
 			
 			response.setJobId(random);
 			response.setStatus(1);
@@ -247,19 +261,18 @@ public class JobTracker implements IJobTracker{
 				{
 					response.setTotalMapTasks(item.numofmaptasks).setTotalReduceTasks(item.numofreducetasks);
 					
-					//Count number of map tasks started of job
+					//Count number of map tasks running of job
 					int mapcount=0;
-					ArrayList<MapTask> maptasklist = new ArrayList<MapTask>();
 					for(MapTask mapitem : maptaskqueue)
 					{
 						if(mapitem.jid == item.jid && mapitem.taken)
 						{
 							mapcount++;
-							maptasklist.add(mapitem);
+							item.maptasklist.add(mapitem.tid);
 						}
 					}
 					
-					//Count number of reduce tasks started of job
+					//Count number of reduce tasks running of job
 					int reducecount = 0;
 					for(ReduceTask reduceitem : reducetaskqueue)
 					{
@@ -267,7 +280,13 @@ public class JobTracker implements IJobTracker{
 							reducecount++;
 					}
 					
-					response.setNumMapTasksStarted(mapcount).setNumReduceTasksStarted(reducecount);
+					System.out.println("Current status of job " + Integer.toString(item.jid) + " maptasks= " + Integer.toString(mapcount) + "-" 
+					+ Integer.toString(item.completedmaptasks)+ "/" + Integer.toString(item.numofmaptasks));
+					
+					System.out.println("Current status of job " + Integer.toString(item.jid) + " reducetasks= " + Integer.toString(reducecount) + "-" 
+							+ Integer.toString(item.completedreducetasks)+ "/" + Integer.toString(item.numofreducetasks));
+					
+					response.setNumMapTasksStarted(mapcount+item.completedmaptasks).setNumReduceTasksStarted(reducecount+item.completedreducetasks);
 
 					if(item.completedmaptasks == item.numofmaptasks)
 					{
@@ -277,11 +296,12 @@ public class JobTracker implements IJobTracker{
 							Collections.shuffle(tasktrackerlist);
 							int uplimit = (int)Math.ceil(((double)item.numofmaptasks)/((double)item.numofreducetasks));
 
-							int taskcount = 0;
+							int taskcount = 0; //counts number of reduce tasks generated so far
+							
 							//generate reduce tasks
 							for(int i=0;i<item.numofreducetasks;i++)
 							{
-								int random = (int)((Math.random() * 10000) + 1); //get random job id
+								int random = (int)((Math.random() * 10000) + 1); //get random reduce task id
 								while(findTaskInQueue(reducetaskqueue,random))
 								{
 									random++;
@@ -290,8 +310,9 @@ public class JobTracker implements IJobTracker{
 								ReduceTask newreducetask = new ReduceTask(random,item.jid,item.reducerName,item.outputFile + "_" + Integer.toString(item.jid) + "_" + Integer.toString(random));
 								for(int j=0;j<uplimit && taskcount<item.numofmaptasks;j++)
 								{
-									newreducetask.filenamelist.add("job_"+Integer.toString(item.jid) + "_map_" + Integer.toString(maptasklist.get(j).tid));
+									newreducetask.filenamelist.add("job_"+Integer.toString(item.jid) + "_map_" + Integer.toString(item.maptasklist.get(j)));
 								}
+								taskcount++;
 								reducetaskqueue.add(newreducetask);									
 							}
 							item.reduceStage = true;
@@ -301,6 +322,7 @@ public class JobTracker implements IJobTracker{
 						if(item.completedreducetasks == item.numofreducetasks)
 						{
 							response.setJobDone(true);
+							System.out.println("Job " + Integer.toString(item.jid) + " Completed");
 							itr.remove();
 						}
 					}
@@ -346,6 +368,7 @@ public class JobTracker implements IJobTracker{
 						}
 					}
 					
+					//remove maptask from queue
 					Iterator<MapTask> itr = maptaskqueue.iterator();
 					MapTask temp=null;
 					while(itr.hasNext())
@@ -388,13 +411,13 @@ public class JobTracker implements IJobTracker{
 			}
 			
 			//give map tasks
-			for(int i=0;i<request.getNumMapSlotsFree();i++)
+			for(int i=0;i<request.getNumMapSlotsFree() && i<maptaskqueue.size();i++)
 			{
 				MapTask tempmtask = maptaskqueue.get(i);
 				maprformat.BlockLocations.Builder bloc = maprformat.BlockLocations.newBuilder().setBlockNumber(tempmtask.inputchunkno);
 				
 				//Add DataNode Locations to block
-				for(int j=0;j<tempmtask.Dnlist.size();j++)
+				for(int j=0;j<tempmtask.Dnlist.size();j++) //TODO: loop not required, only one block per maptask
 				{
 					maprformat.DataNodeLocation tloc = maprformat.DataNodeLocation.newBuilder().setIp(tempmtask.Dnlist.get(j).ip)
 							.setPort(tempmtask.Dnlist.get(j).port).setName(tempmtask.Dnlist.get(j).serverName).build();
@@ -408,7 +431,7 @@ public class JobTracker implements IJobTracker{
 			}
 			
 			// give reduce tasks 
-			for(int i=0;i<request.getNumReduceSlotsFree();i++)
+			for(int i=0;i<request.getNumReduceSlotsFree() && i<reducetaskqueue.size();i++)
 			{
 				ReduceTask temprtask = reducetaskqueue.get(i);
 				ReducerTaskInfo reducerequest = ReducerTaskInfo.newBuilder().setJobId(temprtask.jid)
@@ -453,8 +476,15 @@ public class JobTracker implements IJobTracker{
 		br.close();
 		
 		// To read config file and Connect to NameNode
-        //Intitalize the Client
+        //Intitalize the Client       
 		
+        
+        if(JT == null)
+		{
+			System.out.println("Failed to configure JT. Check jt_details.txt file");
+			System.exit(-1);
+		}
+        
         JT.hdfsclient = new Client();
         System.out.println("Acquiring NameNode stub");
 
@@ -463,31 +493,29 @@ public class JobTracker implements IJobTracker{
         String Config = Client.FileTail("nn_details.txt");
         String[] Split_Config = Config.split(";");
         JT.hdfsclient.NNStub = JT.hdfsclient.GetNNStub(Split_Config[0], Split_Config[1], Integer.parseInt(Split_Config[2]));
-		
-		try
-		{
-			String pathToJar = "/home/mayukuse/java/HDFS/src/jarnewtest.jar";
-			JarFile jarFile = new JarFile(pathToJar);	
+        
+        
+        // JT stubs to rmiregistry
+        System.setProperty("java.rmi.server.hostname", JT.ip);
+		System.setProperty("java.security.policy","test.policy");
 
-			Enumeration<JarEntry> e = jarFile.entries();
-			while(e.hasMoreElements())
-			{
-				System.out.println(e.nextElement().getName());	
-			}
-			
-			URL[] urls = { new URL("jar:file:" + pathToJar+"!/") };
-			URLClassLoader cl = URLClassLoader.newInstance(urls);
-
-		    Class<?> c = cl.loadClass("ds.mapreduce.Mapper");
-		    		    
-		    String temp = c.getMethod("map",String.class, String.class).invoke(c.newInstance(),"1234","45").toString();
-		    System.out.println(temp);
-		    
-		    jarFile.close();
-		}catch(Exception e)
-        {
-            System.out.println("Error " + e.toString());
-            e.printStackTrace();
+        if (System.getSecurityManager() == null) {
+            System.setSecurityManager(new SecurityManager());
         }
+        		
+		//final NetworkTest serverObj = new NetworkTest(args[0]);
+		try {
+			IJobTracker stub = (IJobTracker) UnicastRemoteObject.exportObject(JT, 0);
+
+			// Bind the remote object's stub in the registry
+			JT.serverRegistry = LocateRegistry.getRegistry(JT.port);
+			JT.serverRegistry.rebind(JT.name, stub);
+
+			System.err.println(JT.name + " ready");
+		} catch (Exception e) {
+			System.err.println("Server exception: " + e.toString() + " Failed to start server");
+			e.printStackTrace();
+		}
+        
 	}
 }
