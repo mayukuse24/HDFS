@@ -20,7 +20,13 @@ public class Client
     public IDataNode DNStub; //Data Node stub
     public Client()
     {
-        //Constructor
+        //Get the Name Node Stub
+        //nn_details contain NN details in the format Server;IP;Port
+        System.out.println("Acquiring NameNode stub");
+        String Config = Client.FileTail("nn_details.txt");
+        String[] Split_Config = Config.split(";");
+        this.NNStub = this.GetNNStub(Split_Config[0], Split_Config[1], Integer.parseInt(Split_Config[2]));
+        System.out.println("Got NameNode stub");
     }
 
     public IDataNode GetDNStub(String Name, String IP, int Port)
@@ -481,15 +487,6 @@ public class Client
         //Intitalize the Client
         Client Me = new Client();
         System.out.println("This program is written by Shaleen Garg(201401069) & Vinay Khandelwal(201401139)"); 
-        System.out.println("Acquiring NameNode stub");
-
-        //Get the Name Node Stub
-        //nn_details contain NN details in the format Server;IP;Port
-
-        String Config = Me.FileTail("nn_details.txt");
-        String[] Split_Config = Config.split(";");
-        Me.NNStub = Me.GetNNStub(Split_Config[0], Split_Config[1], Integer.parseInt(Split_Config[2]));
-
         System.out.println("Welcome to SM-HDFS!!");
         Scanner Scan = new Scanner(System.in);
         while(true)
