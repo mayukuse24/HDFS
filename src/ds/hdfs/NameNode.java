@@ -246,6 +246,7 @@ public class NameNode implements INameNode{
 		catch(Exception e)
 		{
 			System.err.println("Error at getBlockLocations "+ e.toString());
+			e.printStackTrace();
 			response.setStatus(-1);
 		}		
 		return response.build().toByteArray();
@@ -292,7 +293,7 @@ public class NameNode implements INameNode{
 			filelist.get(fileindex).Chunks.add(random);
 			
 			Collections.shuffle(DNlist);
-			for(int i=0;i<2;i++) //Select random 2 Datanodes
+			for(int i=0;i<3;i++) //Select random 2 Datanodes
 			{
 				DataNodeLocation dnobj = DataNodeLocation.newBuilder().setIp(dninfo[DNlist.get(i)].ip).setPort(dninfo[DNlist.get(i)].port).setName(dninfo[DNlist.get(i)].serverName).build();
 				blockobj.addLocations(dnobj);

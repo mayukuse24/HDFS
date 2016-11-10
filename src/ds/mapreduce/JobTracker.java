@@ -16,6 +16,7 @@ import java.rmi.registry.LocateRegistry;
 import java.rmi.registry.Registry;
 import java.rmi.server.UnicastRemoteObject;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Collections;
 import java.util.Enumeration;
 import java.util.Iterator;
@@ -227,6 +228,7 @@ public class JobTracker implements IJobTracker{
 			CloseFileRequest closefilerequest = CloseFileRequest.newBuilder().setHandle(openfileresponse.getHandle()).build();
 			CloseFileResponse closefileresponse = CloseFileResponse.parseFrom(this.hdfsclient.NNStub.closeFile(closefilerequest.toByteArray()));
 			
+			System.out.println("maptaskqueue size " + maptaskqueue.size());
 			response.setJobId(random);
 			response.setStatus(1);
 			
@@ -295,7 +297,8 @@ public class JobTracker implements IJobTracker{
 							//select random tasktrackers
 							Collections.shuffle(tasktrackerlist);
 							int uplimit = (int)Math.ceil(((double)item.numofmaptasks)/((double)item.numofreducetasks));
-
+							System.out.println("uplimit = " + Integer.toString(uplimit));
+							
 							int taskcount = 0; //counts number of reduce tasks generated so far
 							
 							//generate reduce tasks
@@ -308,7 +311,7 @@ public class JobTracker implements IJobTracker{
 								}
 
 								ReduceTask newreducetask = new ReduceTask(random,item.jid,item.reducerName,item.outputFile + "_" + Integer.toString(item.jid) + "_" + Integer.toString(random));
-								for(int j=0;j<uplimit && taskcount<item.numofmaptasks;j++)
+								for(int j=0;j<uplimit && taskcount<item.numofmaptasks && j<item.maptasklist.size();j++)
 								{
 									newreducetask.filenamelist.add("job_"+Integer.toString(item.jid) + "_map_" + Integer.toString(item.maptasklist.get(j)));
 								}
@@ -358,7 +361,6 @@ public class JobTracker implements IJobTracker{
 			{
 				if(request.getMapStatus(i).hasTaskCompleted())
 				{
-					
 					for(int j=0;j<jobqueue.size();j++)
 					{
 						if(jobqueue.get(j).jid == request.getMapStatus(i).getJobId())
@@ -377,26 +379,27 @@ public class JobTracker implements IJobTracker{
 						if(temp.tid == request.getMapStatus(i).getTaskId())
 						{
 							itr.remove();
+							System.out.print("maptask " + Integer.toString(temp.tid) + " removed");
 						}
 					}
 				}
 			}
 				
-				
 			//TODO: reduce task status update info
 			for(int i=0;i<request.getReduceStatusCount();i++)
 			{
-				for(int j=0;j<jobqueue.size();j++)
-				{
-					if(jobqueue.get(j).jid == request.getMapStatus(i).getJobId())
-					{
-						//Tell job that a reducetask has been completed
-						jobqueue.get(j).completedreducetasks++;
-					}
-				}
-				
 				if(request.getReduceStatus(i).hasTaskCompleted())
 				{
+					
+					for(int j=0;j<jobqueue.size();j++)
+					{
+						if(jobqueue.get(j).jid == request.getMapStatus(i).getJobId())
+						{
+							//Tell job that a reducetask has been completed
+							jobqueue.get(j).completedreducetasks++;
+						}
+					}
+				
 					Iterator<ReduceTask> itr = reducetaskqueue.iterator();
 					ReduceTask temp=null;
 					while(itr.hasNext())
@@ -405,42 +408,56 @@ public class JobTracker implements IJobTracker{
 						if(temp.tid == request.getMapStatus(i).getTaskId())
 						{
 							itr.remove();
+							System.out.print("reducetask " + Integer.toString(temp.tid) + " removed");
 						}
 					}
 				}
 			}
 			
+			int givenmaptasks = 0;
 			//give map tasks
 			for(int i=0;i<request.getNumMapSlotsFree() && i<maptaskqueue.size();i++)
 			{
 				MapTask tempmtask = maptaskqueue.get(i);
-				maprformat.BlockLocations.Builder bloc = maprformat.BlockLocations.newBuilder().setBlockNumber(tempmtask.inputchunkno);
-				
-				//Add DataNode Locations to block
-				for(int j=0;j<tempmtask.Dnlist.size();j++) //TODO: loop not required, only one block per maptask
+				if(!tempmtask.taken)
 				{
-					maprformat.DataNodeLocation tloc = maprformat.DataNodeLocation.newBuilder().setIp(tempmtask.Dnlist.get(j).ip)
-							.setPort(tempmtask.Dnlist.get(j).port).setName(tempmtask.Dnlist.get(j).serverName).build();
-					bloc.addLocations(tloc);					
+					maprformat.BlockLocations.Builder bloc = maprformat.BlockLocations.newBuilder().setBlockNumber(tempmtask.inputchunkno);
+					
+					//Add DataNode Locations to block
+					for(int j=0;j<tempmtask.Dnlist.size();j++) //TODO: loop not required, only one block per maptask
+					{
+						maprformat.DataNodeLocation tloc = maprformat.DataNodeLocation.newBuilder().setIp(tempmtask.Dnlist.get(j).ip)
+								.setPort(tempmtask.Dnlist.get(j).port).setName(tempmtask.Dnlist.get(j).serverName).build();
+						bloc.addLocations(tloc);					
+					}
+					//Create Map task request. Send to TT. Only one chunk info needs to be added for a maptask.
+					MapTaskInfo maptaskinforequest = MapTaskInfo.newBuilder().setJobId(tempmtask.jid)
+							.setTaskId(tempmtask.tid).setMapName(tempmtask.mapName).addInputBlocks(bloc.build()).build();
+					
+					response.addMapTasks(maptaskinforequest);
+					tempmtask.taken = true;
+					givenmaptasks++;
 				}
-				//Create Map task request. Send to TT. Only one chunk info needs to be added for a maptask.
-				MapTaskInfo maptaskinforequest = MapTaskInfo.newBuilder().setJobId(tempmtask.jid)
-						.setTaskId(tempmtask.tid).setMapName(tempmtask.mapName).addInputBlocks(bloc.build()).build();
-				
-				response.addMapTasks(maptaskinforequest);
 			}
 			
+			int givenreducetasks = 0;
 			// give reduce tasks 
 			for(int i=0;i<request.getNumReduceSlotsFree() && i<reducetaskqueue.size();i++)
 			{
 				ReduceTask temprtask = reducetaskqueue.get(i);
-				ReducerTaskInfo reducerequest = ReducerTaskInfo.newBuilder().setJobId(temprtask.jid)
-						.setTaskId(temprtask.tid).setReducerName(temprtask.reducerName)
-						.setOutputFile(temprtask.outputfile).addAllMapOutputFiles(temprtask.filenamelist).build();
-			
-				response.addReduceTasks(reducerequest);
+				if(!temprtask.taken)
+				{
+					ReducerTaskInfo reducerequest = ReducerTaskInfo.newBuilder().setJobId(temprtask.jid)
+							.setTaskId(temprtask.tid).setReducerName(temprtask.reducerName)
+							.setOutputFile(temprtask.outputfile).addAllMapOutputFiles(temprtask.filenamelist).build();
+				
+					response.addReduceTasks(reducerequest);
+					temprtask.taken = true;
+					givenreducetasks++;
+				}
 			}
 			
+			System.out.println(Integer.toString(request.getTaskTrackerId()) + " MapTasks sent = " +Integer.toString(givenmaptasks) + " Reducetasks sent " + Integer.toString(givenreducetasks));
 			response.setStatus(1);
 			
 		}catch(Exception e)
