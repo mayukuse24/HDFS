@@ -159,8 +159,10 @@ public class TaskTracker
             }
             for(int i=0; i<TT.ReduceTasksList.size();)
             {
+                System.out.println("To remove ReduceTaskList no: " + Integer.toString(i));
                 if(TT.ReduceTasksList.get(i).TaskComplete == true)
                 {
+                    System.out.println("Removing MapTaskno: " + Integer.toString(TT.ReduceTasksList.get(i).TaskID));
                     TT.ReduceTasksList.remove(i);
                 }
                 else
@@ -315,9 +317,9 @@ class MapperFunc implements Callable<Integer>
         }
 
         //Get Jar
-        String PathToJar1 = Paths.get("").toAbsolutePath().toString() + "jarnewtest.jar";
-        System.out.println("Getting Path: " + PathToJar1);
-        String PathToJar = "/home/shaleen/TT1/HDFS/src/jarnewtest.jar"; //Change this for each TT
+        String PathToJar = Paths.get("").toAbsolutePath().toString() + "/jarnewtest.jar";
+        System.out.println("Getting Path: " + PathToJar);
+        //String PathToJar = "/home/shaleen/TT1/HDFS/src/jarnewtest.jar"; //Change this for each TT
         JarFile jarfile = new JarFile(PathToJar);
         URL[] urls = { new URL("jar:file:" + PathToJar + "!/")};
         URLClassLoader cl = URLClassLoader.newInstance(urls);
@@ -375,14 +377,17 @@ class ReducerFunc implements Callable<Integer>
     //This is the function which will be called everytime ReducerFunc is called
     public Integer call() throws FileNotFoundException, IOException
     {
+        System.out.println("Going to Start ReducerFunc");
         Client TTC = new Client();
         //Get all the files from the HDFS
         for(int i=0; i<this.RT.MapOutFiles.size(); i++) 
         {
+            System.out.println("Getting file " + this.RT.MapOutFiles.get(i));
             TTC.GetFile(RT.MapOutFiles.get(i));
         }
 
         FileOutputStream out = new FileOutputStream(this.RT.OutputFile);
+        System.out.println("Going to Merge the Mapped files");
         for (int i=0; i<this.RT.MapOutFiles.size(); i++) 
         {
             FileInputStream in = new FileInputStream(this.RT.MapOutFiles.get(i));
@@ -395,6 +400,8 @@ class ReducerFunc implements Callable<Integer>
             in.close();
         }
         out.close();
+        System.out.println("Merged the Mapped files to " + this.RT.OutputFile);
+        System.out.println("REmoving file " + this.RT.OutputFile);
         TTC.PutFile(this.RT.OutputFile);
         return 1;
     }
