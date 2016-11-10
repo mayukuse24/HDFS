@@ -291,6 +291,7 @@ class MapperFunc implements Callable<Integer>
     {
         //Get Block from HDFS
         Client TTC = new Client();
+        System.out.println("MapperFunc DataNode Info" + MT.DNName + " " + MT.DNIP + " " + MT.DNPort);
         TTC.DNStub = TTC.GetDNStub(MT.DNName, MT.DNIP, MT.DNPort); //Name, IP, Port
         ReadBlockRequest.Builder ReadBlockReq = ReadBlockRequest.newBuilder();
         ReadBlockReq.setBlockNumber(MT.BlockNo);
