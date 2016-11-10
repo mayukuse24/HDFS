@@ -7,6 +7,7 @@ import java.rmi.server.UnicastRemoteObject;
 import java.rmi.RemoteException;
 import java.util.*;
 import java.io.*;
+import java.util.concurrent.*;
 //import ds.hdfs.hdfsformat.*;
 
 import ds.mapreduce.maprformat.*;
@@ -58,14 +59,14 @@ public class JobClient
         //NOTNEEDED ANYMORE
         //This is to get the NN for the client
         /*
-        String Config = HC.FileTail("nn_details.txt");
-        String[] Split_Config = Config.split(";");
-        HC.NNStub = HC.GetNNStub(Split_Config[0], Split_Config[1], Integer.parseInt(Split_Config[2]));
-        System.out.println("Got NNStub from the hdfs");
-        */
+           String Config = HC.FileTail("nn_details.txt");
+           String[] Split_Config = Config.split(";");
+           HC.NNStub = HC.GetNNStub(Split_Config[0], Split_Config[1], Integer.parseInt(Split_Config[2]));
+           System.out.println("Got NNStub from the hdfs");
+           */
         HC.PutFile("REGEX.txt"); //Put the regex file in the HDFS
         HC.PutFile(JC.InputFile); //Put the inputfile in HDFS
-        
+
 
         String Config_JT = Client.FileTail("jt_details.txt");
         String[] SC = Config_JT.split(";");
@@ -131,6 +132,13 @@ public class JobClient
             System.out.println("Num of  ReduceTasks Started = " + JobStatusResp.getNumReduceTasksStarted());
             System.out.println("##############################################################################");
             Resp = null; //Reset the Resp
+
+            try{
+                TimeUnit.SECONDS.sleep(2); //Wait for 1 Seconds
+            }catch(Exception e){
+                System.out.println("Unexpected Interrupt Exception while waiting for BlockReport");
+            }
+
         }
         System.out.println("MapReduce Job Complete !!!");
     }
