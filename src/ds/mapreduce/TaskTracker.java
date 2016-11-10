@@ -318,7 +318,8 @@ class MapperFunc implements Callable<Integer>
         }
 
         //Get Jar
-        //String PathToJar = Paths.get(".").toAbsolutePath().toString() + "/jarnewtest.jar";
+        String PathToJar1 = Paths.get(".").toAbsolutePath().toString() + "/jarnewtest.jar";
+        System.out.println("Getting Path: " + PathToJar1);
         String PathToJar = "/home/shaleen/TT1/HDFS/src/jarnewtest.jar"; //Change this for each TT
         JarFile jarfile = new JarFile(PathToJar);
         URL[] urls = { new URL("jar:file:" + PathToJar + "!/")};
@@ -336,7 +337,7 @@ class MapperFunc implements Callable<Integer>
             {
                 String S = A.toStringUtf8();
                 System.out.println("Line to write in the jar is: " + S);
-                String Result = c.getMethod("map", String.class).invoke(c.newInstance(), S, Regex).toString();
+                String Result = c.getMethod("map", String.class, String.class).invoke(c.newInstance(), S, Regex).toString();
                 System.out.println("Line to write in the file is: " + Result);
                 fos.write(Result.getBytes());
             }
