@@ -88,11 +88,12 @@ public class TaskTracker
         String[] Sc = Config_JT.split(";");
         TT.JTStub = TT.GetJTStub(Sc[0], Sc[1], Integer.parseInt(Sc[2])); //Name, IP, Port
 
+        /* Not Needed
         //Get The NameNode
         String NNConfig = Client.FileTail("nn_details.txt");
         String[] NNSplit_Config = NNConfig.split(";");
         TT.NNStub = TT.GetNNStub(NNSplit_Config[0], NNSplit_Config[1], Integer.parseInt(NNSplit_Config[2])); // Name, IP, Port
-
+        */
         //Send Heartbeat to the JT
         while(true)
         {
