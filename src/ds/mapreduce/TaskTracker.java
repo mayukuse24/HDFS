@@ -110,6 +110,8 @@ public class TaskTracker
                     else
                         TT.MapTasksList.get(i).TaskComplete = true;
                 }
+                else
+                    TT.MapTasksList.get(i).TaskComplete = false;
             }
             //To update the TaskComplete variables in the TT.ReduceTasksList
             for(int i=0; i<TT.ReduceTasksList.size(); i++)
@@ -123,6 +125,8 @@ public class TaskTracker
                     else
                         TT.ReduceTasksList.get(i).TaskComplete = true;
                 }
+                else
+                    TT.ReduceTasksList.get(i).TaskComplete = false;
             }
 
             for(int i=0; i<TT.MapTasksList.size(); i++)
@@ -162,7 +166,7 @@ public class TaskTracker
                 System.out.println("To remove ReduceTaskList no: " + Integer.toString(i));
                 if(TT.ReduceTasksList.get(i).TaskComplete == true)
                 {
-                    System.out.println("Removing MapTaskno: " + Integer.toString(TT.ReduceTasksList.get(i).TaskID));
+                    System.out.println("Removing ReduceTaskno: " + Integer.toString(TT.ReduceTasksList.get(i).TaskID));
                     TT.ReduceTasksList.remove(i);
                 }
                 else
