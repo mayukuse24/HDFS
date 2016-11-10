@@ -291,7 +291,7 @@ class MapperFunc implements Callable<Integer>
     {
         //Get Block from HDFS
         Client TTC = new Client();
-        System.out.println("MapperFunc DataNode Info" + MT.DNName + " " + MT.DNIP + " " + MT.DNPort);
+        System.out.println("MapperFunc DataNode Info " + MT.DNName + " " + MT.DNIP + " " + MT.DNPort);
         TTC.DNStub = TTC.GetDNStub(MT.DNName, MT.DNIP, MT.DNPort); //Name, IP, Port
         ReadBlockRequest.Builder ReadBlockReq = ReadBlockRequest.newBuilder();
         ReadBlockReq.setBlockNumber(MT.BlockNo);
@@ -318,7 +318,8 @@ class MapperFunc implements Callable<Integer>
         }
 
         //Get Jar
-        String PathToJar = Paths.get(".").toAbsolutePath().toString() + "/jarnewtest.jar";
+        //String PathToJar = Paths.get(".").toAbsolutePath().toString() + "/jarnewtest.jar";
+        String PathToJar = "/home/shaleen/TT1/HDFS/src/jarnewtest.jar"; //Change this for each TT
         JarFile jarfile = new JarFile(PathToJar);
         URL[] urls = { new URL("jar:file:" + PathToJar + "!/")};
         URLClassLoader cl = URLClassLoader.newInstance(urls);
@@ -327,12 +328,14 @@ class MapperFunc implements Callable<Integer>
         //Get the regex from REGEX.txt file 
         TTC.GetFile("REGEX.txt"); //Get file from the hdfs
         String Regex = Client.FileTail("REGEX.txt");
+        System.out.println("REGEX given By the JobClient: " + Regex);
         //Send the Lines of the block to the Jar and write the output to the Outputfile
         try{
             FileOutputStream fos = new FileOutputStream(this.MT.OutputFile, true);
             for(ByteString A : BlockResp.getDataList())
             {
                 String S = A.toStringUtf8();
+                System.out.println("Line to write in the jar is: " + S);
                 String Result = c.getMethod("map", String.class).invoke(c.newInstance(), S, Regex).toString();
                 System.out.println("Line to write in the file is: " + Result);
                 fos.write(Result.getBytes());
@@ -340,7 +343,8 @@ class MapperFunc implements Callable<Integer>
             fos.flush();
             fos.close();
         }catch(Exception e){
-            System.out.println("IOError while writing to the file in MapperFunc");
+            e.printStackTrace();
+            //System.out.println("IOError while writing to the file in MapperFunc");
             return -1;
         }
         //Now to write this file back to the hdfs
