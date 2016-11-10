@@ -50,13 +50,11 @@ public class NameNode implements INameNode{
 	{
 		String ip;
 		int port;
-		int counter;
 		String serverName;
 		public DataNode(String addr,int p,String sname)
 		{
 			ip = addr;
 			port = p;
-			counter = 0;
 			serverName = sname;
 		}
 	}
@@ -198,46 +196,6 @@ public class NameNode implements INameNode{
 						bw.append(lastline + "\n");
 						bw.close();
 						
-						/*
-						File ftest = new File(fchunk_file);
-						ftest.createNewFile(); //creates a new file only if one doesnt exist
-						File ftest2 = new File("tmp.txt");
-						ftest2.createNewFile(); 
-						
-						FileOutputStream fos = new FileOutputStream("tmp.txt");
-						FileInputStream fis = new FileInputStream(fchunk_file);
-					
-						BufferedReader br = new BufferedReader(new InputStreamReader(fis));
-						BufferedWriter bw = new BufferedWriter(new OutputStreamWriter(fos));
-					 
-						//line format : filename:chunk1,chunk2,chunk3
-						String lastline = null;
-						String line = null;
-						while ((line = br.readLine()) != null) 
-						{
-							line = line.replace("\n", "").replace("\r", "");
-							String[] fname_chunks = line.split(",");
-							if(fname.equals(fname_chunks[0]))
-							{
-								lastline = fname;
-								for(int j=1;j<fname_chunks.length;j++)
-								{
-									lastline += "," + fname_chunks[j];
-								}
-								response.setStatus(1);
-							}
-							else
-							{
-								bw.write(line + "\n");
-							}
-						}
-						bw.write(lastline+"," + Integer.toString(random)+"\n"); //inserted new chunk number
-						br.close();
-						bw.close();
-						fos.close();
-						fis.close();
-						ftest2.renameTo(ftest);
-						*/
 					}
 					//Remove handle from temporary filelist
 					filelist.remove(i);
@@ -334,7 +292,7 @@ public class NameNode implements INameNode{
 			filelist.get(fileindex).Chunks.add(random);
 			
 			Collections.shuffle(DNlist);
-			for(int i=0;i<3;i++) //Select random 3 Datanodes
+			for(int i=0;i<2;i++) //Select random 2 Datanodes
 			{
 				DataNodeLocation dnobj = DataNodeLocation.newBuilder().setIp(dninfo[DNlist.get(i)].ip).setPort(dninfo[DNlist.get(i)].port).setName(dninfo[DNlist.get(i)].serverName).build();
 				blockobj.addLocations(dnobj);

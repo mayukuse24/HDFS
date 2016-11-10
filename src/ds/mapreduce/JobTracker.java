@@ -63,9 +63,13 @@ public class JobTracker implements IJobTracker{
 		}
 	}
 	
-	public class MapTask
+	public class TaskData
 	{
 		int tid,jid;
+	}
+	
+	public class MapTask extends TaskData
+	{
 		String mapName,inputFile;
 		int inputchunkno;
 		boolean taken;
@@ -81,9 +85,8 @@ public class JobTracker implements IJobTracker{
 		}
 	}
 	
-	public class ReduceTask
+	public class ReduceTask extends TaskData
 	{
-		int tid,jid;
 		String reducerName,outputfile;
 		boolean taken; //check if task started
 		ArrayList<String> filenamelist;
@@ -128,21 +131,9 @@ public class JobTracker implements IJobTracker{
     	return false;
     }
     
-    private boolean findMapTaskInQueue(ArrayList<MapTask> qt,int num)
+    private boolean findTaskInQueue(ArrayList<? extends TaskData> qt,int num)
     {
-    	for(MapTask item : qt)
-    	{
-    		if(item.tid == num)
-    		{
-    			return true;
-    		}
-    	}
-    	return false;
-    }
-    
-    private boolean findReduceTaskInQueue(ArrayList<ReduceTask> qt,int num)
-    {
-    	for(ReduceTask item : qt)
+    	for(TaskData item : qt)
     	{
     		if(item.tid == num)
     		{
@@ -192,7 +183,7 @@ public class JobTracker implements IJobTracker{
 			for(int j=0;j<blocresponse.getBlockLocationsCount();j++)
 			{
 				int random2 = (int)((Math.random() * 10000) + 1); //get random task id
-				while(findMapTaskInQueue(maptaskqueue,random2))
+				while(findTaskInQueue(maptaskqueue,random2))
 				{
 					random2++;
 				}
@@ -278,7 +269,7 @@ public class JobTracker implements IJobTracker{
 							for(int i=0;i<item.numofreducetasks;i++)
 							{
 								int random = (int)((Math.random() * 10000) + 1); //get random job id
-								while(findReduceTaskInQueue(reducetaskqueue,random))
+								while(findTaskInQueue(reducetaskqueue,random))
 								{
 									random++;
 								}
@@ -332,6 +323,16 @@ public class JobTracker implements IJobTracker{
 			{
 				if(request.getMapStatus(i).hasTaskCompleted())
 				{
+					
+					for(int j=0;j<jobqueue.size();j++)
+					{
+						if(jobqueue.get(j).jid == request.getMapStatus(i).getJobId())
+						{
+							//Tell job that a maptask has been completed
+							jobqueue.get(j).completedmaptasks++;
+						}
+					}
+					
 					Iterator<MapTask> itr = maptaskqueue.iterator();
 					MapTask temp=null;
 					while(itr.hasNext())
@@ -349,6 +350,15 @@ public class JobTracker implements IJobTracker{
 			//TODO: reduce task status update info
 			for(int i=0;i<request.getReduceStatusCount();i++)
 			{
+				for(int j=0;j<jobqueue.size();j++)
+				{
+					if(jobqueue.get(j).jid == request.getMapStatus(i).getJobId())
+					{
+						//Tell job that a reducetask has been completed
+						jobqueue.get(j).completedreducetasks++;
+					}
+				}
+				
 				if(request.getReduceStatus(i).hasTaskCompleted())
 				{
 					Iterator<ReduceTask> itr = reducetaskqueue.iterator();
@@ -384,7 +394,7 @@ public class JobTracker implements IJobTracker{
 				response.addMapTasks(maptaskinforequest);
 			}
 			
-			// give reduce tasks TODO: give reduce task to reducer
+			// give reduce tasks 
 			for(int i=0;i<request.getNumReduceSlotsFree();i++)
 			{
 				ReduceTask temprtask = reducetaskqueue.get(i);
@@ -442,6 +452,7 @@ public class JobTracker implements IJobTracker{
 		    String temp = c.getMethod("map",String.class, String.class).invoke(c.newInstance(),"1234","45").toString();
 		    System.out.println(temp);
 		    
+		    jarFile.close();
 		}catch(Exception e)
         {
             System.out.println("Error " + e.toString());
