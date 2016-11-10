@@ -185,6 +185,16 @@ public class TaskTracker
                 System.out.println("There is some problem while decoding the HeartBeatResponse in proto");
                 return;
             }
+            if(HeartBeatResp.getStatus() == 0)
+            {
+                System.out.println("Got HearBeat Status = 0");
+                try{
+                    TimeUnit.SECONDS.sleep(1); //Wait for 1 Seconds
+                }catch(Exception e){
+                    System.out.println("Unexpected Interrupt Exception while waiting for BlockReport");
+                }
+                continue;
+            }
             if(HeartBeatResp.getStatus() < 0)
             {
                 System.out.println("Huston, We have HeartBeatResponse Status = " + HeartBeatResp.getStatus());
@@ -209,7 +219,7 @@ public class TaskTracker
                 TT.MapTasksList.add(MT);
                 // TT.MapTasksList.get((TT.MapTasksList.size()-1)).future.isDone();
             }
-            
+
             for(int i=0; i<HeartBeatResp.getReduceTasksCount(); i++)
             {
                 //Spawn the Reduce Tasks
