@@ -1,0 +1,2 @@
+//This is the details file of the JT used by JobClient and TaskTracker Name, IP, Port
+JT;10.1.39.21;2004
