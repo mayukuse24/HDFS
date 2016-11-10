@@ -139,6 +139,7 @@ public class TaskTracker
                 MPS.setTaskCompleted(TT.MapTasksList.get(i).TaskComplete);
                 MPS.setMapOutputFile(TT.MapTasksList.get(i).OutputFile);
                 HBR.addMapStatus(MPS.build());
+                System.out.println("MapTask HB request: Task ID " + Integer.toString(TT.MapTasksList.get(i).TaskID) + " Complete = " + TT.MapTasksList.get(i).TaskComplete);
             }
 
             for(int i=0; i<TT.ReduceTasksList.size(); i++)
@@ -155,6 +156,7 @@ public class TaskTracker
             {
                 if(TT.ReduceTasksList.get(i).TaskComplete == true)
                 {
+                    System.out.println("Removing MapTaskno: " + TT.ReduceTasksList.get(i).TaskID);
                     TT.ReduceTasksList.remove(i);
                 }
                 else
