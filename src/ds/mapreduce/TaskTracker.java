@@ -338,9 +338,9 @@ class MapperFunc implements Callable<Integer>
             for(ByteString A : BlockResp.getDataList())
             {
                 String S = A.toStringUtf8();
-                System.out.println("Line to write in the jar is: " + S);
+                //System.out.println("Line to write in the jar is: " + S);
                 String Result = c.getMethod("map", String.class, String.class).invoke(c.newInstance(), S, Regex).toString();
-                System.out.println("Line to write in the file is: " + Result);
+                //System.out.println("Line to write in the file is: " + Result);
                 fos.write(Result.getBytes());
             }
             fos.flush();
