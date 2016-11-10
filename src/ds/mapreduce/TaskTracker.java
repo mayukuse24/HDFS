@@ -151,7 +151,7 @@ public class TaskTracker
                 System.out.println("To remove MapTaskList no: " + Integer.toString(i));
                 if(TT.MapTasksList.get(i).TaskComplete == true)
                 {
-                    System.out.println("Removing MapTaskno: " + Integer.toString(TT.ReduceTasksList.get(i).TaskID));
+                    System.out.println("Removing MapTaskno: " + Integer.toString(TT.MapTasksList.get(i).TaskID));
                     TT.MapTasksList.remove(i);
                 }
                 else
