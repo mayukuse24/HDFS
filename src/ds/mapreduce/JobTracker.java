@@ -22,6 +22,7 @@ import java.util.Enumeration;
 import java.util.Iterator;
 import java.util.LinkedList;
 import java.util.Queue;
+import java.util.concurrent.TimeUnit;
 import java.util.jar.JarEntry;
 import java.util.jar.JarFile;
 import java.util.regex.Matcher;
@@ -165,6 +166,20 @@ public class JobTracker implements IJobTracker{
     	return false;
     }
     
+    private boolean checkChunksForEmptyLocations(BlockLocationResponse blocresponse)
+    {
+    	//test if all chunks got DN locations
+		for(int k=0;k<blocresponse.getBlockLocationsCount();k++)
+		{
+			if(blocresponse.getBlockLocations(k).getLocationsCount() == 0)
+			{
+				return false;
+			}
+		}
+		
+		return true;
+    }
+    
 	/* JobSubmitResponse jobSubmit(JobSubmitRequest) */
  	public byte[] jobSubmit(byte[] inpdata) throws RemoteException
 	{
@@ -186,23 +201,40 @@ public class JobTracker implements IJobTracker{
 			OpenFileResponse openfileresponse = OpenFileResponse.parseFrom(this.hdfsclient.NNStub
 					.openFile(openfilerequest.toByteArray()));
 			
-			BlockLocationRequest.Builder blocrequest = BlockLocationRequest.newBuilder();
-			//add chunks to blockrequest for DN
-			for(int i=0;i<openfileresponse.getBlockNumsCount();i++)
-			{
-				blocrequest.addBlockNums(openfileresponse.getBlockNums(i));
-			}
-			
-			//get DNs for chunks
-			BlockLocationResponse blocresponse = BlockLocationResponse.parseFrom(this.hdfsclient.NNStub
-					.getBlockLocations(blocrequest.build().toByteArray()));
-			
 			// Create and add new job
 			Job newjob = new Job(random,openfileresponse.getBlockNumsCount(),request.getNumReduceTasks(),request.getMapName(),request.getReducerName(),
 					request.getInputFile(),request.getOutputFile(),openfileresponse.getHandle());
-									
+
 			jobqueue.add(newjob);
-						
+
+			BlockLocationResponse blocresponse;
+			while(true)
+			{
+				BlockLocationRequest.Builder blocrequest = BlockLocationRequest.newBuilder();
+				//add chunks to blockrequest for DN
+				for(int i=0;i<openfileresponse.getBlockNumsCount();i++)
+				{
+					blocrequest.addBlockNums(openfileresponse.getBlockNums(i));
+				}
+
+				//get DNs for chunks
+				blocresponse = BlockLocationResponse.parseFrom(this.hdfsclient.NNStub
+						.getBlockLocations(blocrequest.build().toByteArray()));
+				
+				if(checkChunksForEmptyLocations(blocresponse))
+				{
+					System.out.println("Found chunk with empty Location set. Trying again");
+					break;
+				}
+				else
+				{
+					//got no data locations for some chunk. Wait for sometime
+					TimeUnit.SECONDS.sleep(5);
+				}
+			}
+			
+			System.out.println(blocresponse.toString());
+
 			//create and add map tasks
 			for(int j=0;j<blocresponse.getBlockLocationsCount();j++)
 			{
@@ -458,7 +490,11 @@ public class JobTracker implements IJobTracker{
 			}
 			
 			System.out.println(Integer.toString(request.getTaskTrackerId()) + " MapTasks sent = " +Integer.toString(givenmaptasks) + " Reducetasks sent " + Integer.toString(givenreducetasks));
-			response.setStatus(1);
+			
+			if(givenreducetasks == 0 && givenmaptasks == 0)
+				response.setStatus(0);
+			else
+				response.setStatus(1);
 			
 		}catch(Exception e)
 		{
