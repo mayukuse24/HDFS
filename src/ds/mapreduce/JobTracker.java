@@ -1,6 +1,11 @@
 package ds.mapreduce;
 
+import java.io.BufferedReader;
 import java.io.File;
+import java.io.FileInputStream;
+import java.io.FileNotFoundException;
+import java.io.IOException;
+import java.io.InputStreamReader;
 import java.lang.reflect.InvocationTargetException;
 import java.net.MalformedURLException;
 import java.net.URI;
@@ -26,7 +31,6 @@ import ds.mapreduce.maprformat.JobStatusResponse;
 import ds.mapreduce.maprformat.JobSubmitResponse;
 import ds.mapreduce.maprformat.MapTaskInfo;
 import ds.mapreduce.maprformat.ReducerTaskInfo;
-import ds.hdfs.Client;
 import ds.hdfs.hdfsformat.BlockLocationRequest;
 import ds.hdfs.hdfsformat.BlockLocationResponse;
 import ds.hdfs.hdfsformat.BlockLocations;
@@ -39,6 +43,15 @@ public class JobTracker implements IJobTracker{
 
 	
 	Client hdfsclient;
+	String ip,name;
+	int port;
+	
+	public JobTracker(String addr,int p, String nn)
+	{
+		ip = addr;
+		port = p;
+		name = nn;
+	}
 	
 	public class Job
 	{
@@ -417,21 +430,39 @@ public class JobTracker implements IJobTracker{
 		return response.build().toByteArray();
 	}
 	
-	public static void main(String[] args)
+	public static void main(String[] args) throws NumberFormatException, IOException
 	{
-		/*
+		FileInputStream fis = new FileInputStream("jt_details.txt");
+		
+		//Construct BufferedReader from InputStreamReader
+		BufferedReader br = new BufferedReader(new InputStreamReader(fis));
+
+		JobTracker JT = null;
+		
+		String line = null;
+		while ((line = br.readLine()) != null) 
+		{
+			System.out.println(line);
+			String[] Split_Config = line.split(";");
+			if("JT".equals(Split_Config[0]))
+			{
+				JT = new JobTracker(Split_Config[1],Integer.parseInt(Split_Config[2]),Split_Config[0]);
+				break;
+			}
+		}
+		br.close();
+		
 		// To read config file and Connect to NameNode
         //Intitalize the Client
-		JobTracker Jtobj = new JobTracker();
-        Jtobj.hdfsclient = new Client();
+		
+        JT.hdfsclient = new Client();
         System.out.println("Acquiring NameNode stub");
 
         //Get the Name Node Stub
         //nn_details contain NN details in the format Server;IP;Port
-        String Config = Jtobj.hdfsclient.FileTail("nn_details.txt");
+        String Config = Client.FileTail("nn_details.txt");
         String[] Split_Config = Config.split(";");
-        Jtobj.hdfsclient.NNStub = Jtobj.hdfsclient.GetNNStub(Split_Config[0], Split_Config[1], Integer.parseInt(Split_Config[2]));
-        */
+        JT.hdfsclient.NNStub = JT.hdfsclient.GetNNStub(Split_Config[0], Split_Config[1], Integer.parseInt(Split_Config[2]));
 		
 		try
 		{

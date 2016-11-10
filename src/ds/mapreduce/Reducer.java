@@ -4,6 +4,6 @@ public class Reducer implements IReducer{
 
 	public String reduce(String inpdata)
 	{
-		return "helloworld";
+		return "";
 	}
 }
