@@ -325,6 +325,7 @@ class MapperFunc implements Callable<Integer>
                 String Result = c.getMethod("map", String.class).invoke(c.newInstance(), S, Regex).toString();
                 fos.write(Result.getBytes());
             }
+            fos.flush();
             fos.close();
         }catch(Exception e){
             System.out.println("IOError while writing to the file in MapperFunc");
