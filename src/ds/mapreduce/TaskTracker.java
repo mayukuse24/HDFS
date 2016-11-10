@@ -201,6 +201,7 @@ public class TaskTracker
             }
 
             //Spawn The MapTasks given by JT
+            System.out.println("No of Map Tasks = " + HeartBeatResp.getMapTasksCount());
             for(int i=0; i<HeartBeatResp.getMapTasksCount(); i++)
             {
                 Maptasks MT = new Maptasks();
@@ -219,6 +220,7 @@ public class TaskTracker
                 // TT.MapTasksList.get((TT.MapTasksList.size()-1)).future.isDone();
             }
 
+            System.out.println("No of Reduce Tasks = " + HeartBeatResp.getReduceTasksCount());
             for(int i=0; i<HeartBeatResp.getReduceTasksCount(); i++)
             {
                 //Spawn the Reduce Tasks
