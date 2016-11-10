@@ -315,7 +315,7 @@ class MapperFunc implements Callable<Integer>
         }
 
         //Get Jar
-        String PathToJar1 = Paths.get(".").toAbsolutePath().toString() + "/jarnewtest.jar";
+        String PathToJar1 = Paths.get("").toAbsolutePath().toString() + "jarnewtest.jar";
         System.out.println("Getting Path: " + PathToJar1);
         String PathToJar = "/home/shaleen/TT1/HDFS/src/jarnewtest.jar"; //Change this for each TT
         JarFile jarfile = new JarFile(PathToJar);
