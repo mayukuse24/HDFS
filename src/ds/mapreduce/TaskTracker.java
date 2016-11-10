@@ -323,6 +323,7 @@ class MapperFunc implements Callable<Integer>
             {
                 String S = A.toStringUtf8();
                 String Result = c.getMethod("map", String.class).invoke(c.newInstance(), S, Regex).toString();
+                System.out.println("Line to write in the file is: " + Result);
                 fos.write(Result.getBytes());
             }
             fos.flush();
