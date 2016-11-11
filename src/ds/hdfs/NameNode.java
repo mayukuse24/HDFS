@@ -162,6 +162,7 @@ public class NameNode implements INameNode{
 		catch (Exception e) 
 		{
 			System.err.println("Error at " + this.getClass() + e.toString());
+			e.printStackTrace();
 			response.setStatus(-1);
 		}
 		return response.build().toByteArray();
@@ -244,6 +245,7 @@ public class NameNode implements INameNode{
 						TimeUnit.SECONDS.sleep(3);
 					}else
 					{
+						Collections.shuffle(dnlist);
 						for(int j=0;j<dnlist.size();j++)
 						{
 							int dnid = dnlist.get(j);
