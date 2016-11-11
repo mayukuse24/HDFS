@@ -171,6 +171,8 @@ public class Client
             try{
                 if(i == NumSplits)
                 {
+                    if(RemainingBytes == 0) //Else there are LeftBytes and hence the following processes are needed
+                        continue;
                     tmp = bis.read(LeftBuffer);
                 }
                 else
