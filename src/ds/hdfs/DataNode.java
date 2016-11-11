@@ -371,7 +371,7 @@ public class DataNode implements IDataNode
         {
             Me.BlockReport();
             try{
-                TimeUnit.SECONDS.sleep(3); //Wait for 10 Seconds
+                TimeUnit.SECONDS.sleep(3); //Wait for 3 Seconds
             }catch(Exception e){
                 System.out.println("Unexpected Interrupt Exception while waiting for BlockReport");
                 //e.printStackTrace();
