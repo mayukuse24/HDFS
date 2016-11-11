@@ -336,7 +336,7 @@ class MapperFunc implements Callable<Integer>
         System.out.println("REGEX given By the JobClient: " + Regex);
         //Send the Lines of the block to the Jar and write the output to the Outputfile
         try{
-            FileOutputStream fos = new FileOutputStream(this.MT.OutputFile, true);
+            FileOutputStream fos = new FileOutputStream(this.MT.OutputFile, false);
             for(ByteString A : BlockResp.getDataList())
             {
                 String S = A.toStringUtf8();
