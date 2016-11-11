@@ -137,7 +137,7 @@ public class TaskTracker
                 MPS.setTaskCompleted(TT.MapTasksList.get(i).TaskComplete);
                 MPS.setMapOutputFile(TT.MapTasksList.get(i).OutputFile);
                 HBR.addMapStatus(MPS.build());
-                System.out.println("MapTask HB request: Task ID " + Integer.toString(TT.MapTasksList.get(i).TaskID) + " Complete = " + TT.MapTasksList.get(i).TaskComplete);
+                //System.out.println("MapTask HB request: Task ID " + Integer.toString(TT.MapTasksList.get(i).TaskID) + " Complete = " + TT.MapTasksList.get(i).TaskComplete);
             }
 
             for(int i=0; i<TT.ReduceTasksList.size(); i++)
@@ -152,7 +152,7 @@ public class TaskTracker
             //Remove done elements from ReduceTaskList and MapTasksList
             for(int i=0; i<TT.MapTasksList.size();)
             {
-                System.out.println("To remove MapTaskList no: " + Integer.toString(i));
+                //System.out.println("To remove MapTaskList no: " + Integer.toString(i));
                 if(TT.MapTasksList.get(i).TaskComplete == true)
                 {
                     System.out.println("Removing MapTaskno: " + Integer.toString(TT.MapTasksList.get(i).TaskID));
@@ -163,7 +163,7 @@ public class TaskTracker
             }
             for(int i=0; i<TT.ReduceTasksList.size();)
             {
-                System.out.println("To remove ReduceTaskList no: " + Integer.toString(i));
+                //System.out.println("To remove ReduceTaskList no: " + Integer.toString(i));
                 if(TT.ReduceTasksList.get(i).TaskComplete == true)
                 {
                     System.out.println("Removing ReduceTaskno: " + Integer.toString(TT.ReduceTasksList.get(i).TaskID));
@@ -190,7 +190,6 @@ public class TaskTracker
             }
             if(HeartBeatResp.getStatus() == 0)
             {
-                System.out.println("Got HearBeat Status = 0");
                 try{
                     TimeUnit.SECONDS.sleep(1); //Wait for 1 Seconds
                 }catch(Exception e){
@@ -407,7 +406,7 @@ class ReducerFunc implements Callable<Integer>
         }
         out.close();
         System.out.println("Merged the Mapped files to " + this.RT.OutputFile);
-        System.out.println("REmoving file " + this.RT.OutputFile);
+        System.out.println("Removing file " + this.RT.OutputFile);
         TTC.PutFile(this.RT.OutputFile);
         return 1;
     }
