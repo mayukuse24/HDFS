@@ -390,7 +390,7 @@ public class Client
             //FileBytes = FileBytes.concat(BlockResp.getData(0));
 
             try{
-                FileOutputStream fos = new FileOutputStream(FileName, false);
+                FileOutputStream fos = new FileOutputStream(FileName, true);
                 for(ByteString A : BlockResp.getDataList())
                 {
                     String test = A.toStringUtf8();
