@@ -224,19 +224,37 @@ public class NameNode implements INameNode{
 			for(int i=0;i<deserObj.getBlockNumsCount();i++)
 			{
 				int blockno = deserObj.getBlockNums(i);
-				List<Integer> dnlist = chunktodns.get(blockno); //TODO : Test for empty dnlist
 				BlockLocations.Builder blockinfo = BlockLocations.newBuilder();
 				blockinfo.setBlockNumber(blockno);
-				
-				this.printMsg("list of DN " + dnlist + " of chunk number " + blockno);
-				for(int j=0;j<dnlist.size();j++)
+				while(true)
 				{
-					int dnid = dnlist.get(j);
-					DataNodeLocation dnobj = DataNodeLocation.newBuilder()
-							.setIp(this.dninfo[dnid].ip)
-							.setPort(this.dninfo[dnid].port)
-							.setName(this.dninfo[dnid].serverName).build();
-					blockinfo.addLocations(dnobj);
+					List<Integer> dnlist = chunktodns.get(blockno); //TODO : Test for empty dnlist
+				
+					this.printMsg("list of DN " + dnlist + " of chunk number " + blockno);
+					
+					if(dnlist == null) //chunk doesnt exist
+					{
+						System.out.println("Chunk " + Integer.toString(blockno) + " does not exist");
+						response.setStatus(-1);
+						return response.build().toByteArray();
+						
+					}else if(dnlist.size() == 0) //DN hasnt contacted NN with chunks yet. But chunk exists
+					{
+						System.out.println("Chunk " + Integer.toString(blockno) + " has no DNs yet. Retrying...");
+						TimeUnit.SECONDS.sleep(3);
+					}else
+					{
+						for(int j=0;j<dnlist.size();j++)
+						{
+							int dnid = dnlist.get(j);
+							DataNodeLocation dnobj = DataNodeLocation.newBuilder()
+									.setIp(this.dninfo[dnid].ip)
+									.setPort(this.dninfo[dnid].port)
+									.setName(this.dninfo[dnid].serverName).build();
+							blockinfo.addLocations(dnobj);
+						}
+						break;
+					}
 				}
 				response.addBlockLocations(blockinfo);
 			}
