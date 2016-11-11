@@ -207,6 +207,7 @@ public class NameNode implements INameNode{
 		catch(Exception e)
 		{
 			System.err.println("Error at closefileRequest " + e.toString());
+			e.printStackTrace();
 			response.setStatus(-1);
 		}
 		
@@ -285,6 +286,9 @@ public class NameNode implements INameNode{
 			{
 				random++;
 			}
+			
+			chunktodns.put(random, new ArrayList<Integer>());
+			
 			BlockLocations.Builder blockobj = BlockLocations.newBuilder().setBlockNumber(random);
 			
 			this.printMsg("Creating Assigning chunk number " + Integer.toString(random) + " filename " + fname + " for filehandle " + Integer.toString(filehandle) + " indexed at " + Integer.toString(fileindex));
