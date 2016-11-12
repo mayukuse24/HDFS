@@ -275,6 +275,9 @@ public class JobTracker implements IJobTracker{
 				maptaskqueue.add(newmaptask);
 			}
 			
+			if(maptaskqueue.size() < newjob.numofreducetasks) //If reducers are less than maptasks
+				newjob.numofreducetasks = maptaskqueue.size();
+			
 			//Close hdfs file opened to read chunk nos
 			CloseFileRequest closefilerequest = CloseFileRequest.newBuilder().setHandle(openfileresponse.getHandle()).build();
 			CloseFileResponse closefileresponse = CloseFileResponse.parseFrom(this.hdfsclient.NNStub.closeFile(closefilerequest.toByteArray()));
