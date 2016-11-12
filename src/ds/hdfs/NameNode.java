@@ -38,6 +38,7 @@ public class NameNode implements INameNode{
 	DataNode[] dninfo; //index stands for datanode id
 	List<Integer> DNlist = new ArrayList<Integer>();
 	String fchunk_file = new String();
+	int numberofreplicas;
 	
 	public NameNode(String addr,int p, String nn)
 	{
@@ -317,7 +318,7 @@ public class NameNode implements INameNode{
 			filelist.get(fileindex).Chunks.add(random);
 			
 			Collections.shuffle(DNlist);
-			for(int i=0;i<3;i++) //Select random 2 Datanodes
+			for(int i=0;i<this.numberofreplicas;i++) //Select random 2 Datanodes
 			{
 				DataNodeLocation dnobj = DataNodeLocation.newBuilder().setIp(dninfo[DNlist.get(i)].ip).setPort(dninfo[DNlist.get(i)].port).setName(dninfo[DNlist.get(i)].serverName).build();
 				blockobj.addLocations(dnobj);
@@ -459,6 +460,7 @@ public class NameNode implements INameNode{
 			System.exit(-1);
 		}
 		
+		NN.numberofreplicas = 2; //set number of replicas of DNs
 		NN.dninfo = new DataNode[15000];
 		NN.fchunk_file = "filetochunklist.txt";
 		
