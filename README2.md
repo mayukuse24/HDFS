@@ -4,7 +4,7 @@ This is the work of Shaleen Garg and Vinaya Khandelwal
 
 # System configuration
 
-The project was tested using docker instances. See docker at https://www.docker.com/ .
+The project was tested using **docker** instances. See docker at https://www.docker.com/ .
 Some basic commands.
 
 docker images
@@ -21,26 +21,26 @@ docker inspect -f '{{.Name}} - {{.NetworkSettings.IPAddress }}' $(docker ps -aq)
 
 The project contains three folders bin, src and util.
 
-bin contains the compiled code
+**bin** contains the compiled code
 
-src contains the java files :-
+**src** contains the java files structured as follows :
 
 ds/hdfs for the HDFS java files
 ds/mapreduce for the Mapreduce java files
 
-##configuration files
+### Configuration files
 
-jt_details.txt -- stores information of jobtracker ip and port
-nn_details.txt -- stores information of namenode ip and port 
-TT_details.txt -- stores information of tasktracker ID, NumberOfMapThreads and NumberOfReduceThreads
-dn_config.txt -- stores information of datanode ID, ip and port
+jt_details.txt -- stores information of Jobtracker ip and port
+nn_details.txt -- stores information of Namenode ip and port 
+TT_details.txt -- stores information of Tasktracker ID, NumberOfMapThreads and NumberOfReduceThreads
+dn_config.txt -- stores information of Datanode ID, ip and port
 jar file contains the map functions and the reduce functions. They are dynamically loaded.
 REGEX file contains the grep term.
 
-Every Node needs the nn_details.txt file to contact namenode. The rest of the files are required by 
+Every Node needs the nn_details.txt file to contact Namenode. The rest of the files are required by 
 respective nodes for binding to their own ips and ports.
 
-util folder contains : 
+**util** folder contains : 
 
 jtscript.sh -- Script to run Jobtracker. 
 nnscript.sh -- Script to run NameNode.
