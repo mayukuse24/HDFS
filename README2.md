@@ -28,7 +28,7 @@ src contains the java files :-
 ds/hdfs for the HDFS java files
 ds/mapreduce for the Mapreduce java files
 
-configuration files
+##configuration files
 
 jt_details.txt -- stores information of jobtracker ip and port
 nn_details.txt -- stores information of namenode ip and port 
